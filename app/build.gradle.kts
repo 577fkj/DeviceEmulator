@@ -55,4 +55,6 @@ dependencies {
 
     implementation(libs.xposed.ezxhelper)
     compileOnly(libs.xposed.api)
+
+    implementation(project(":XServiceManager"))
 }

@@ -16,13 +16,13 @@ private const val TAG = "DeviceEmulator"
 
 class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
     companion object {
-        fun initHooks(vararg hook: BaseHook) {
+        fun initHooks(lpparam: XC_LoadPackage.LoadPackageParam, vararg hook: BaseHook) {
             hook.forEach {
                 runCatching {
                     if (it.isInit) return@forEach
-                    it.init()
+                    it.init(lpparam)
                     it.isInit = true
-                    Log.i("Inited hook: ${it.name}")
+                    Log.dx("Inited hook: ${it.name}")
                 }.logexIfThrow("Failed init hook: ${it.name}")
             }
         }
@@ -34,11 +34,12 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
     )
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+        Log.dx("lpparam.packageName = ${lpparam.packageName}, lpparam.processName = ${lpparam.processName}")
         if (hookMap.keys.contains(lpparam.packageName)) {
             EzXHelperInit.initHandleLoadPackage(lpparam)
             EzXHelperInit.setLogTag(TAG)
             EzXHelperInit.setToastTag(TAG)
-            initHooks(hookMap[lpparam.packageName]!!)
+            initHooks(lpparam, hookMap[lpparam.packageName]!!)
         }
     }
 

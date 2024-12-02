@@ -7,7 +7,6 @@ import android.os.Binder
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Parcel
-import android.os.RemoteException
 import android.util.ArrayMap
 import android.util.Log
 import com.github.kyuubiran.ezxhelper.utils.findMethod
@@ -18,65 +17,98 @@ import java.io.IOException
 import java.lang.reflect.InvocationTargetException
 import java.util.Locale
 import java.util.Objects
+import android.os.Process
+import com.github.kyuubiran.ezxhelper.utils.paramCount
 
+
+typealias ServiceFetcher<T> = (Context) -> T
+typealias AddServiceCallback = (String, IBinder) -> Unit
 
 object XServiceManager {
-    const val TAG: String = "XServiceManager"
-    const val DELEGATE_SERVICE: String = "clipboard"
-    val SERVICE_FETCHERS: MutableMap<String, ServiceFetcher<Binder>> = ArrayMap()
-    val sCache: HashMap<String?, IBinder> = HashMap()
+    private const val TAG = "XServiceManager"
+    private const val DELEGATE_SERVICE = "clipboard"
+    private val SERVICE_FETCHERS: MutableMap<String, ServiceFetcher<IBinder>> = ArrayMap()
+    private val sCache: HashMap<String, IBinder> = HashMap()
 
-    val DESCRIPTOR: String = XServiceManager::class.java.name
-    const val TRANSACTION_getService: Int =
+    private val DESCRIPTOR: String = XServiceManager::class.java.name
+    private const val TRANSACTION_getService: Int =
         ('_'.code shl 24) or ('X'.code shl 16) or ('S'.code shl 8) or 'M'.code
 
-    val packageList: ArrayList<String?> = ArrayList()
-    var isWhitelist: Boolean = false
+    private val packageList: ArrayList<String> = ArrayList()
+    private var isWhitelist: Boolean = false
 
-    interface ServiceFetcher<T : Binder> {
-        fun createService(ctx: Context): T
-    }
+    private var addServiceCallback: AddServiceCallback? = null
+
 
     fun setWhiteList(status: Boolean) {
         isWhitelist = status
     }
 
-    fun addPackage(packageName: String?) {
+    fun addPackage(packageName: String) {
         packageList.add(packageName)
     }
 
-    fun addPackage(list: ArrayList<String?>?) {
-        packageList.addAll(list!!)
+    fun addPackage(list: ArrayList<String>) {
+        packageList.addAll(list)
     }
 
-    fun removePackage(packageName: String?) {
+    fun removePackage(packageName: String) {
         packageList.remove(packageName)
+    }
+
+    fun setAddServiceCallback(cb: AddServiceCallback) {
+        addServiceCallback = cb
+    }
+
+
+    private fun getSystemContext(): Context {
+        @SuppressLint("PrivateApi") val activityThreadClass =
+            Class.forName("android.app.ActivityThread")
+        val currentActivityThread = activityThreadClass.getMethod("currentActivityThread")
+        val getSystemContext = activityThreadClass.getMethod("getSystemContext")
+        val systemContext =
+            getSystemContext.invoke(currentActivityThread.invoke(null)) as Context
+        return systemContext
     }
 
     /**
      * Init XServiceManager for system server.
      * Must be called from system_server!
      */
-    fun initForSystemServer() {
-        if (!isSystemServerProcess()) return
+    fun initForSystemServer(keepCheck: Boolean = false) {
+        if (!isSystemServerProcess(keepCheck)) {
+            Log.d(TAG, "Not system server process, skip inject")
+            return
+        }
         try {
             findMethod("android.os.ServiceManager") {
-                name == "addService"
+                name == "addService" && paramCount == 4
             }.hookBefore {
                 val sName = it.args[0] as String
                 val service = it.args[1] as IBinder
                 if (sName == DELEGATE_SERVICE) {
+                    val systemContext = getSystemContext()
+                    val customService = XServiceManagerService(systemContext)
                     service.javaClass.findMethod {
                         name == "onTransact"
                     }.hookBefore { tran ->
                         val code = tran.args[0] as Int
                         val data = tran.args[1] as Parcel
                         val reply = tran.args[2] as Parcel?
-                        if (myTransact(code, data, reply)) {
+                        if (customService.onTransact(code, data, reply)) {
                             it.result = true
                         }
                     }
+                    for ((name, value) in SERVICE_FETCHERS) {
+                        try {
+                            val s = value(systemContext)
+                            addService(name, s)
+                        } catch (e: java.lang.Exception) {
+                            Log.e(TAG, String.format("create %s service fail", name), e)
+                        }
+                    }
                 }
+                addServiceCallback?.let { cb -> cb(sName, service) }
             }
             Log.d(TAG, "inject success")
         } catch (e: Exception) {
@@ -84,21 +116,16 @@ object XServiceManager {
         }
     }
 
-    private fun isSystemServerProcess(): Boolean {
-        if (Process.myUid() !== Process.SYSTEM_UID) {
+    private fun isSystemServerProcess(keepCheck: Boolean): Boolean {
+        if (keepCheck) {
+            return true
+        }
+        if (Process.myUid() != Process.SYSTEM_UID) {
             return false
         }
         try {
-            BufferedReader(
-                FileReader(
-                    java.lang.String.format(
-                        Locale.getDefault(),
-                        "/proc/%d/cmdline",
-                        Process.myPid()
-                    )
-                )
-            ).use { r ->
-                val processName = r.readLine().trim { it <= ' ' }
+            BufferedReader(FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid()))).use { r ->
+                val processName = r.readLine().trim()
                 return "system_server" == processName
             }
         } catch (ignore: IOException) {
@@ -107,7 +134,6 @@ object XServiceManager {
         return false
     }
 
-    static
     class CallingHelper(private val context: Context) {
         private var activityManager: ActivityManager? = null
         private var lastCheckTime: Long = 0
@@ -116,15 +142,15 @@ object XServiceManager {
         val callingPackageName: String?
             get() = getCallingPackageName(Binder.getCallingUid(), Binder.getCallingPid())
 
-        fun getCallingPackageName(uid: Int, pid: Int): String? {
+        private fun getCallingPackageName(uid: Int, pid: Int): String? {
             if (uid != -1) {
-                var packages: Array<String?>? = null
+                var packages: Array<String>? = null
                 try {
                     packages = context.packageManager.getPackagesForUid(uid)
                 } catch (e: Exception) {
                     Log.e(TAG, "Get calling package name fail", e)
                 }
-                if (packages != null && packages.size >= 1) {
+                if (!packages.isNullOrEmpty()) {
                     return packages[0]
                 }
             }
@@ -152,77 +178,48 @@ object XServiceManager {
         }
     }
 
-    private static
-    class BinderDelegateService(
-        private val systemService: IBinder,
-        private val customService: IBinder,
-        context: Context
-    ) :
-        Binder() {
+    class XServiceManagerService(context: Context) {
         private val callingHelper = CallingHelper(context)
 
-        fun isAllowPackageName(packageName: String?): Boolean {
+        private fun isAllowPackageName(packageName: String?): Boolean {
             if (isWhitelist) {
                 return packageList.contains(packageName)
             }
             return !packageList.contains(packageName)
         }
 
-        @Throws(RemoteException::class)
-        override fun onTransact(
+         fun onTransact(
             code: Int,
-            @NonNull data: Parcel,
-            reply: Parcel?,
-            flags: Int
+            data: Parcel,
+            reply: Parcel?
         ): Boolean {
             if (code == TRANSACTION_getService) {
-                val packageName = callingHelper.callingPackageName
-                if (!isAllowPackageName(packageName)) {
-                    Log.d(
-                        TAG,
-                        String.format("reject %s service %s", packageName, data.readString())
-                    )
-                    return false
+                if (Binder.getCallingUid() > Process.FIRST_APPLICATION_UID) { // System app not check
+                    val packageName = callingHelper.callingPackageName
+                    if (!isAllowPackageName(packageName)) {
+                        Log.d(
+                            TAG,
+                            String.format("reject %s service %s", packageName, data.readString())
+                        )
+                        return false
+                    }
                 }
-                return customService.transact(code, data, reply, flags)
+                runCatching {
+                    data.enforceInterface(DESCRIPTOR)
+                    reply?.writeNoException()
+                    reply?.writeStrongBinder(getServiceInternal(data.readString()!!))
+                    return true
+                }.onFailure {
+                    Log.e(TAG, "Transaction error", it)
+                }
+                data.setDataPosition(0)
+                reply?.setDataPosition(0)
             }
-            return systemService.transact(code, data, reply, flags)
+            return false
         }
     }
 
-    private static
-    class XServiceManagerService : Binder() {
-        @Throws(RemoteException::class)
-        override fun onTransact(
-            code: Int,
-            @NonNull data: Parcel,
-            reply: Parcel?,
-            flags: Int
-        ): Boolean {
-            val descriptor = DESCRIPTOR
-            when (code) {
-                INTERFACE_TRANSACTION -> {
-                    reply!!.writeString(descriptor)
-                    return true
-                }
-
-                TRANSACTION_getService -> {
-                    data.enforceInterface(descriptor)
-                    val name = data.readString()
-                    reply!!.writeNoException()
-                    val binder = getServiceInternal(name)
-                    reply.writeStrongBinder(binder)
-                    return true
-                }
-
-                else -> {
-                    return super.onTransact(code, data, reply, flags)
-                }
-            }
-        }
-    }
-
-    private fun getServiceInternal(name: String?): IBinder? {
+    private fun getServiceInternal(name: String): IBinder? {
         val binder = sCache[name]
         Log.d(TAG, String.format("get service %s %s", name, binder))
         return binder
@@ -238,8 +235,8 @@ object XServiceManager {
      * @param name           the name of the new service
      * @param serviceFetcher the service fetcher object
      */
-    fun <T : Binder?> registerService(name: String, serviceFetcher: ServiceFetcher<T>) {
-        if (!isSystemServerProcess()) return
+    fun <T : IBinder> registerService(name: String, keepCheck: Boolean, serviceFetcher: ServiceFetcher<T>) {
+        if (!isSystemServerProcess(keepCheck)) return
         Log.d(TAG, String.format("register service %s %s", name, serviceFetcher))
         SERVICE_FETCHERS[name] = serviceFetcher
     }
@@ -252,8 +249,8 @@ object XServiceManager {
      * @param name    the name of the new service
      * @param service the service object
      */
-    fun addService(name: String?, service: IBinder) {
-        if (!isSystemServerProcess()) return
+    fun addService(name: String, service: IBinder, keepCheck: Boolean = false) {
+        if (!isSystemServerProcess(keepCheck)) return
         Log.d(TAG, String.format("add service %s %s", name, service))
         sCache[name] = service
     }
@@ -264,27 +261,27 @@ object XServiceManager {
      * @param name the name of the service to get
      * @return a reference to the service, or `null` if the service doesn't exist
      */
-    fun getService(name: String?): IBinder? {
+    @SuppressLint("Recycle") fun getService(name: String): IBinder? {
         try {
-            @SuppressLint("PrivateApi") val ServiceManagerClass =
+            @SuppressLint("PrivateApi") val serviceManagerClass =
                 Class.forName("android.os.ServiceManager")
-            val checkService = ServiceManagerClass.getMethod(
+            val checkService = serviceManagerClass.getMethod(
                 "checkService",
                 String::class.java
             )
             val delegateService = checkService.invoke(null, DELEGATE_SERVICE) as IBinder
             Objects.requireNonNull(delegateService, "can't not access delegate service")
-            val _data = Parcel.obtain()
-            val _reply = Parcel.obtain()
+            val data = Parcel.obtain()
+            val reply = Parcel.obtain()
             try {
-                _data.writeInterfaceToken(DESCRIPTOR)
-                _data.writeString(name)
-                delegateService.transact(TRANSACTION_getService, _data, _reply, 0)
-                _reply.readException()
-                return _reply.readStrongBinder()
+                data.writeInterfaceToken(DESCRIPTOR)
+                data.writeString(name)
+                delegateService.transact(TRANSACTION_getService, data, reply, 0)
+                reply.readException()
+                return reply.readStrongBinder()
             } finally {
-                _data.recycle()
-                _reply.recycle()
+                data.recycle()
+                reply.recycle()
             }
         } catch (e: Exception) {
             Log.e(
@@ -296,11 +293,11 @@ object XServiceManager {
         }
     }
 
-    fun <I : IInterface?> getServiceInterface(name: String?): I? {
+    fun <I : IInterface> getServiceInterface(name: String): I? {
         try {
             val service = getService(name)
             Objects.requireNonNull(service, String.format("can't found %s service", name))
-            val descriptor = service!!.interfaceDescriptor
+            val descriptor = service?.interfaceDescriptor
             val stubClass = XServiceManager::class.java.classLoader!!.loadClass("$descriptor\$Stub")
             @Suppress("UNCHECKED_CAST")
             return stubClass.getMethod("asInterface", IBinder::class.java)
