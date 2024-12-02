@@ -1,5 +1,5 @@
 // IDeviceEmulatorInterface.aidl
-package cn.fkj233.deviceemulator;
+package cn.fkj233.deviceemulator.aidl;
 
 interface IDeviceEmulatorInterface {
 

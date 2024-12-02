@@ -2,7 +2,7 @@ package cn.fkj233.deviceemulator.service
 
 import android.content.Context
 import android.os.IBinder
-import cn.fkj233.deviceemulator.IDeviceEmulatorInterface
+import cn.fkj233.deviceemulator.aidl.IDeviceEmulatorInterface
 
 class DeviceEmulatorService(context: Context) : IDeviceEmulatorInterface.Stub() {
     private var mockDeviceInfoService: MockDeviceInfoService = MockDeviceInfoService(context)

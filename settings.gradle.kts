@@ -22,5 +22,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "DeviceEmulator"
 include(":app")
-include(":libxservicemanager")
- 
+include(":XServiceManager")

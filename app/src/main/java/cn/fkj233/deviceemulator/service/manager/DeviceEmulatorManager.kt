@@ -1,9 +1,9 @@
 package cn.fkj233.deviceemulator.service.manager
 
 import android.content.Context
-import cn.fkj233.deviceemulator.IDeviceEmulatorInterface
-import cn.fkj233.deviceemulator.mock.IMockDeviceInfoInterface
-import cn.fkj233.deviceemulator.mock.IMockLocationInterface
+import cn.fkj233.deviceemulator.aidl.IDeviceEmulatorInterface
+import cn.fkj233.deviceemulator.aidl.mock.IMockDeviceInfoInterface
+import cn.fkj233.deviceemulator.aidl.mock.IMockLocationInterface
 
 class DeviceEmulatorManager(private val context: Context, private val service: IDeviceEmulatorInterface) {
 

@@ -1,5 +1,5 @@
 // IMockDeviceInfoInterface.aidl
-package cn.fkj233.deviceemulator.mock;
+package cn.fkj233.deviceemulator.aidl.mock;
 
 // Declare any non-default types here with import statements
 
