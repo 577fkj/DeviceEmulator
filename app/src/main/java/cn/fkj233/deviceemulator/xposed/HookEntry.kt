@@ -22,7 +22,7 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
                     if (it.isInit) return@forEach
                     it.init(lpparam)
                     it.isInit = true
-                    Log.dx("Inited hook: ${it.name}")
+                    Log.ix("Inited hook: ${it.name}")
                 }.logexIfThrow("Failed init hook: ${it.name}")
             }
         }
@@ -34,7 +34,7 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
     )
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
-        Log.dx("lpparam.packageName = ${lpparam.packageName}, lpparam.processName = ${lpparam.processName}")
+        Log.ix("lpparam.packageName = ${lpparam.packageName}, lpparam.processName = ${lpparam.processName}")
         if (hookMap.keys.contains(lpparam.packageName)) {
             EzXHelperInit.initHandleLoadPackage(lpparam)
             EzXHelperInit.setLogTag(TAG)

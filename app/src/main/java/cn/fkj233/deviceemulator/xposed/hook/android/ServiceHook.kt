@@ -9,9 +9,14 @@ abstract class ServiceHook {
     var isInit: Boolean = false
 
     fun getTransactId(serviceClass: Class<*>, name: String): Int {
+        return getFieldValue(serviceClass, "TRANSACTION_$name")
+    }
+
+    fun <T> getFieldValue(serviceClass: Class<*>, n: String): T {
         val field = serviceClass.findField(true) {
-            name == "TRANSACTION_$name"
+            n == name
         }
-        return field.getInt(null)
+        @Suppress("UNCHECKED_CAST")
+        return field.get(null) as T
     }
 }

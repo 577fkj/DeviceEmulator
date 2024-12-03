@@ -32,7 +32,7 @@ object AndroidHook : BaseHook() {
                 val serviceClassName = service.javaClass
                 init(sName, serviceClassName, service)
                 isInit = true
-                Log.dx("Init service hook $name")
+                Log.ix("Init service hook $name")
             }
         }
     }
