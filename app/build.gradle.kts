@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.rikka.hiddenapi.refine)
 }
 
 android {
@@ -57,4 +58,7 @@ dependencies {
     compileOnly(libs.xposed.api)
 
     implementation(project(":XServiceManager"))
+
+    compileOnly(project(":hidden-api"))
+    implementation(libs.rikka.hiddenapi.runtime)
 }

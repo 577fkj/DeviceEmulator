@@ -16,6 +16,7 @@ object AndroidHook : BaseHook() {
 
     private val serviceHooks = mapOf(
         Context.WIFI_SERVICE to WifiHook()
+//        Context.CONNECTIVITY_SERVICE to ConnectivityHook()
     )
 
     override fun init(lpparam: XC_LoadPackage.LoadPackageParam) {
@@ -29,10 +30,14 @@ object AndroidHook : BaseHook() {
         XServiceManager.setAddServiceCallback { sName, service ->
             Log.dx("AddService $sName $service")
             serviceHooks.getOrDefault(sName, null)?.apply {
-                val serviceClassName = service.javaClass
-                init(sName, serviceClassName, service)
-                isInit = true
-                Log.ix("Init service hook $name")
+                runCatching {
+                    val serviceClassName = service.javaClass
+                    init(sName, serviceClassName, service)
+                    isInit = true
+                    Log.ix("Init service hook $name")
+                }.onFailure {
+                    Log.ex(it)
+                }
             }
         }
     }

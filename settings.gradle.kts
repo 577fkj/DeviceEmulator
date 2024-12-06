@@ -23,3 +23,4 @@ dependencyResolutionManagement {
 rootProject.name = "DeviceEmulator"
 include(":app")
 include(":XServiceManager")
+include(":hidden-api")

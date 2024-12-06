@@ -1,62 +1,94 @@
 package cn.fkj233.deviceemulator.xposed.hook.android
 
-import android.R.attr.data
 import android.annotation.SuppressLint
+import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
+import android.net.wifi.WifiInfoHidden
+import android.net.wifi.WifiSsid
 import android.os.IBinder
 import android.os.Parcel
 import android.os.Parcelable
+import cn.fkj233.deviceemulator.common.InetAddressHelper
 import com.github.kyuubiran.ezxhelper.utils.Log
 import com.github.kyuubiran.ezxhelper.utils.findMethod
-import com.github.kyuubiran.ezxhelper.utils.hookAfter
+import com.github.kyuubiran.ezxhelper.utils.findMethodOrNull
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
+import com.github.kyuubiran.ezxhelper.utils.invokeAs
+import com.github.kyuubiran.ezxhelper.utils.newInstanceAs
+import dev.rikka.tools.refine.Refine
+import java.net.InetAddress
 
 
 class WifiHook : ServiceHook() {
     override val name: String = "Wifi Hook"
 
-    private var getConnectionInfoId: Int = -1
-    private var DESCRIPTOR = ""
+    private fun createWifiSsid(ssid: String): WifiSsid? {
+        val wifiSsidClass = Class.forName("android.net.wifi.WifiSsid")
 
-    @SuppressLint("NewApi")
-    override fun init(serviceName: String, serviceClass: Class<*>, service: IBinder) {
-        Log.ix("WifiHook init")
-//        Log.dx("ServiceName: $serviceName")
-//        Log.dx("ServiceClass: $serviceClass")
-//        Log.dx("ServiceClass Superclass: ${serviceClass.superclass}")
-//        Log.dx("ServiceClass IInterface: ${serviceClass.interfaces}")
-//        Log.dx("Service: $service")
-        val wifi = WifiInfo.Builder()
-            .setRssi(-10)
-            .setSsid("TestWifi".toByteArray())
-            .setBssid("00:00:00:00:00:00")
-            .setNetworkId(0)
-            .build()
-        getConnectionInfoId = getTransactId(serviceClass, "getConnectionInfo")
-        DESCRIPTOR = getFieldValue(serviceClass, "DESCRIPTOR")
-        serviceClass.findMethod(true) {
-            name == "onTransact"
-        }.apply {
-            Log.ix("Hooked onTransact $this")
-            hookBefore {
-                val code = it.args[0] as Int
-                val data = it.args[1] as Parcel
-                val reply = it.args[2] as Parcel?
-                when (code) {
-                    getConnectionInfoId -> {
-                        Log.ix("DESCRIPTOR: $DESCRIPTOR")
-                        data.enforceInterface(DESCRIPTOR)
-                        Log.ix("Hooked getConnectionInfo")
-                        val callingPackage = data.readString()
-                        Log.ix("CallPackageName: $callingPackage")
-                        val callingFeatureId = data.readString()
-                        Log.ix("CallFeatureId: $callingFeatureId")
-                        reply?.writeNoException()
-                        reply?.writeTypedObject(wifi, Parcelable.PARCELABLE_WRITE_RETURN_VALUE)
-                        it.result = true
-                    }
-                }
+        var wifiSsid = wifiSsidClass.findMethodOrNull {
+            name == "fromBytes"
+        }?.invokeAs<WifiSsid>(null, ssid.toByteArray())
+
+        if (wifiSsid == null) {
+            wifiSsid = wifiSsidClass.findMethodOrNull {
+                name == "createFromByteArray"
+            }?.invokeAs<WifiSsid>(null, ssid)
+        }
+
+        if (wifiSsid == null) {
+            val hex = ssid.toByteArray().joinToString("") {
+                it.toString(16).padStart(2, '0')
             }
+            wifiSsid = wifiSsidClass.findMethodOrNull {
+                name == "createFromHex"
+            }?.invokeAs<WifiSsid>(null, hex)
+        }
+
+        return wifiSsid
+    }
+
+    private fun getEmptyWifiInfo(): WifiInfo? = WifiInfo::class.java.newInstanceAs()
+    private fun getWifiInfo(): WifiInfo? {
+        val wifiInfo = getEmptyWifiInfo() ?: return null
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setSSID(createWifiSsid("TTTTT"))
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setMacAddress("1E:40:E8:10:ED:2B")
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setRssi(-10)
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setBSSID("56:16:51:7C:69:C7")
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setLinkSpeed(1000)
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setFrequency(2437)
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setNetworkId(1000)
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .score = 60
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setSupplicantState(SupplicantState.COMPLETED)
+
+        val ipAddress = InetAddressHelper.getIpv4InetAddress("114.114.114.114")
+
+        Refine.unsafeCast<WifiInfoHidden>(wifiInfo)
+            .setInetAddress(ipAddress)
+
+        return wifiInfo
+    }
+
+    override fun init(serviceName: String, service: IBinder) {
+        Log.ix("WifiHook init")
+        val wifi = getWifiInfo()
+        addTransactHookBefore("getConnectionInfo") { code, data, reply ->
+            Log.ix("Hooked getConnectionInfo")
+            val callingPackage = data.readString()
+            Log.ix("CallPackageName: $callingPackage")
+            val callingFeatureId = data.readString()
+            Log.ix("CallFeatureId: $callingFeatureId")
+            reply?.writeNoException()
+            reply?.writeTypedObject(wifi, Parcelable.PARCELABLE_WRITE_RETURN_VALUE)
+            true
         }
     }
 }

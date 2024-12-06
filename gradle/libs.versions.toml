@@ -1,5 +1,6 @@
 [versions]
 agp = "8.7.2"
+hiddenApi = "4.4.0"
 api = "82"
 ezxhelper = "1.0.3"
 kotlin = "1.9.21"
@@ -17,6 +18,9 @@ navigationUiKtx = "2.8.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+rikka-hiddenapi-annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "hiddenApi" }
+rikka-hiddenapi-annotation-processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "hiddenApi" }
+rikka-hiddenapi-runtime = { module = "dev.rikka.tools.refine:runtime", version.ref = "hiddenApi" }
 xposed-api = { module = "de.robv.android.xposed:api", version.ref = "api" }
 xposed-ezxhelper = { module = "com.github.kyuubiran:EzXHelper", version.ref = "ezxhelper" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -34,4 +38,5 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 android-application = { id = "com.android.application", version.ref = "agp" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+rikka-hiddenapi-refine = { id = "dev.rikka.tools.refine", version.ref = "hiddenApi" }
 
