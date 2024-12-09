@@ -31,8 +31,7 @@ object XServiceManager {
     private val sCache: HashMap<String, IBinder> = HashMap()
 
     private val DESCRIPTOR: String = XServiceManager::class.java.name
-    private const val TRANSACTION_getService: Int =
-        ('_'.code shl 24) or ('X'.code shl 16) or ('S'.code shl 8) or 'M'.code
+    private const val TRANSACTION_getService: Int = ('_'.code shl 24) or ('X'.code shl 16) or ('S'.code shl 8) or 'M'.code
 
     private val packageList: ArrayList<String> = ArrayList()
     private var isWhitelist: Boolean = false
@@ -83,9 +82,10 @@ object XServiceManager {
         try {
             findMethod("android.os.ServiceManager") {
                 name == "addService" && paramCount == 4
-            }.hookBefore {
-                val sName = it.args[0] as String
-                val service = it.args[1] as IBinder
+            }.hookBefore { addService ->
+                val sName = addService.args[0] as String
+                val service = addService.args[1] as IBinder
+
                 if (sName == DELEGATE_SERVICE) {
                     val systemContext = getSystemContext()
                     val customService = XServiceManagerService(systemContext)
@@ -95,9 +95,8 @@ object XServiceManager {
                         val code = tran.args[0] as Int
                         val data = tran.args[1] as Parcel
                         val reply = tran.args[2] as Parcel?
-                        Log.d(TAG, "onTransact $code")
                         if (customService.onTransact(code, data, reply)) {
-                            it.result = true
+                            tran.result = true
                         }
                     }
                     Log.d(TAG, "inject $DELEGATE_SERVICE success")
@@ -105,9 +104,9 @@ object XServiceManager {
                         try {
                             val s = init(systemContext)
                             addService(name, s, keepCheck)
-                            Log.d(TAG, String.format("create %s service success", name))
+                            Log.d(TAG, "create $name service success")
                         } catch (e: Exception) {
-                            Log.e(TAG, String.format("create %s service fail", name), e)
+                            Log.e(TAG, "create $name service fail", e)
                         }
                     }
                     Log.d(TAG, "All service create success")
@@ -128,7 +127,7 @@ object XServiceManager {
             return false
         }
         try {
-            BufferedReader(FileReader(String.format(Locale.getDefault(), "/proc/%d/cmdline", Process.myPid()))).use { r ->
+            BufferedReader(FileReader("/proc/${Process.myPid()}/cmdline")).use { r ->
                 val processName = r.readLine().trim()
                 return "system_server" == processName
             }
@@ -159,8 +158,7 @@ object XServiceManager {
                 }
             }
             if (activityManager == null) {
-                activityManager =
-                    context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             }
 
             if (activityManager == null) {
@@ -211,23 +209,14 @@ object XServiceManager {
                     if (Binder.getCallingUid() >= Process.FIRST_APPLICATION_UID) { // System app not check
                         val packageName = callingHelper.callingPackageName
                         if (!isAllowPackageName(packageName)) {
-                            Log.d(
-                                TAG,
-                                String.format("reject %s service %s", packageName, serviceName)
-                            )
+                            Log.d(TAG, "reject $packageName service $serviceName")
                             data.setDataPosition(0)
                             reply?.setDataPosition(0)
                             return false
                         }
-                        Log.d(
-                            TAG,
-                            String.format("allow %s get service %s", packageName, serviceName)
-                        )
+                        Log.d(TAG, "allow $packageName get service $serviceName")
                     }
                     val binder = getServiceInternal(serviceName)
-
-                    Log.d(TAG, String.format("get service %s %s", serviceName, binder))
-                    Log.d(TAG, String.format("data %s, reply %s", data, reply))
 
                     reply?.writeNoException()
                     reply?.writeStrongBinder(binder)
@@ -235,6 +224,7 @@ object XServiceManager {
                 }.onFailure {
                     Log.e(TAG, "Transaction error", it)
                 }
+                Log.d(TAG, "Transaction fail")
                 data.setDataPosition(0)
                 reply?.setDataPosition(0)
             }
@@ -244,7 +234,7 @@ object XServiceManager {
 
     private fun getServiceInternal(name: String): IBinder? {
         val binder = sCache[name]
-        Log.d(TAG, String.format("get service %s %s", name, binder))
+        Log.d(TAG, "get service $name $binder")
         return binder
     }
 
@@ -260,7 +250,7 @@ object XServiceManager {
      */
     fun <T : IBinder> registerService(name: String, keepCheck: Boolean, serviceFetcher: ServiceFetcher<T>) {
         if (!isSystemServerProcess(keepCheck)) return
-        Log.d(TAG, String.format("register service %s %s", name, serviceFetcher))
+        Log.d(TAG, "register service $name $serviceFetcher")
         SERVICE_FETCHERS[name] = serviceFetcher
     }
 
@@ -274,7 +264,7 @@ object XServiceManager {
      */
     fun addService(name: String, service: IBinder, keepCheck: Boolean = false) {
         if (!isSystemServerProcess(keepCheck)) return
-        Log.d(TAG, String.format("add service %s %s", name, service))
+        Log.d(TAG, "add service $name $service")
         sCache[name] = service
     }
 
@@ -301,17 +291,14 @@ object XServiceManager {
                 data.writeString(name)
                 delegateService.transact(TRANSACTION_getService, data, reply, 0)
                 reply.readException()
-                return reply.readStrongBinder()
+                val service = reply.readStrongBinder()
+                return service
             } finally {
                 data.recycle()
                 reply.recycle()
             }
         } catch (e: Exception) {
-            Log.e(
-                TAG,
-                String.format("get %s service error", name),
-                if (e is InvocationTargetException) e.cause else e
-            )
+            Log.e(TAG, "get $name service error", if (e is InvocationTargetException) e.cause else e)
             return null
         }
     }
@@ -319,20 +306,15 @@ object XServiceManager {
     fun <I : IInterface> getServiceInterface(name: String): I? {
         try {
             val service = getService(name)
-            Objects.requireNonNull(service, String.format("can't found %s service", name))
+            Objects.requireNonNull(service, "can't found $name service")
             val descriptor = service?.interfaceDescriptor
             val stubClass = XServiceManager::class.java.classLoader!!.loadClass("$descriptor\$Stub")
             @Suppress("UNCHECKED_CAST")
             return stubClass.getMethod("asInterface", IBinder::class.java)
                 .invoke(null, service) as I
         } catch (e: Exception) {
-            Log.e(
-                TAG,
-                String.format("get %s service error", name),
-                if (e is InvocationTargetException) e.cause else e
-            )
+            Log.e(TAG, "get $name service error", if (e is InvocationTargetException) e.cause else e)
             return null
         }
     }
-
 }

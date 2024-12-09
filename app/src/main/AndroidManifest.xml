@@ -8,6 +8,9 @@
     <!--允许获取粗略位置，若用GPS实现定位小蓝点功能则必选-->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!--允许获取精确位置，若用GPS实现定位小蓝点功能则必选-->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <!--允许获取网络状态，用于网络定位，若无gps但仍需实现定位小蓝点功能则此权限必选-->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -54,6 +57,10 @@
         <meta-data
             android:name="xposedscope"
             android:resource="@array/xposedscope" />
+
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="${amap}" />
 
         <activity
             android:name=".app.MainActivity"

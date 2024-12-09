@@ -28,7 +28,7 @@ object AndroidHook : BaseHook() {
             mService!!
         }
         XServiceManager.setAddServiceCallback { sName, service ->
-            Log.dx("AddService $sName $service")
+//            Log.dx("AddService $sName $service")
             serviceHooks.getOrDefault(sName, null)?.apply {
                 runCatching {
                     val serviceClassName = service.javaClass

@@ -38,6 +38,8 @@ android {
         } else {
             buildConfigField("String", "AMAP_FAKE_PACKAGE_NAME", "null")
         }
+
+        manifestPlaceholders["amap"] = key
     }
 
     signingConfigs {
