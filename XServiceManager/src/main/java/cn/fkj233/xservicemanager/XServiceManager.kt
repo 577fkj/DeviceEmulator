@@ -89,28 +89,32 @@ object XServiceManager {
                 if (sName == DELEGATE_SERVICE) {
                     val systemContext = getSystemContext()
                     val customService = XServiceManagerService(systemContext)
-                    service.javaClass.findMethod {
+                    service.javaClass.findMethod(true) {
                         name == "onTransact"
                     }.hookBefore { tran ->
                         val code = tran.args[0] as Int
                         val data = tran.args[1] as Parcel
                         val reply = tran.args[2] as Parcel?
+                        Log.d(TAG, "onTransact $code")
                         if (customService.onTransact(code, data, reply)) {
                             it.result = true
                         }
                     }
-                    for ((name, value) in SERVICE_FETCHERS) {
+                    Log.d(TAG, "inject $DELEGATE_SERVICE success")
+                    for ((name, init) in SERVICE_FETCHERS) {
                         try {
-                            val s = value(systemContext)
-                            addService(name, s)
-                        } catch (e: java.lang.Exception) {
+                            val s = init(systemContext)
+                            addService(name, s, keepCheck)
+                            Log.d(TAG, String.format("create %s service success", name))
+                        } catch (e: Exception) {
                             Log.e(TAG, String.format("create %s service fail", name), e)
                         }
                     }
+                    Log.d(TAG, "All service create success")
                 }
                 addServiceCallback?.let { cb -> cb(sName, service) }
             }
-            Log.d(TAG, "inject success")
+            Log.d(TAG, "inject addService success")
         } catch (e: Exception) {
             Log.e(TAG, "inject fail", e)
         }
@@ -194,20 +198,39 @@ object XServiceManager {
             reply: Parcel?
         ): Boolean {
             if (code == TRANSACTION_getService) {
-                if (Binder.getCallingUid() > Process.FIRST_APPLICATION_UID) { // System app not check
-                    val packageName = callingHelper.callingPackageName
-                    if (!isAllowPackageName(packageName)) {
-                        Log.d(
-                            TAG,
-                            String.format("reject %s service %s", packageName, data.readString())
-                        )
-                        return false
-                    }
-                }
                 runCatching {
                     data.enforceInterface(DESCRIPTOR)
+                    val serviceName = data.readString()
+                    if (serviceName == null) {
+                        Log.d(TAG, "service name is null")
+                        data.setDataPosition(0)
+                        reply?.setDataPosition(0)
+                        return false
+                    }
+
+                    if (Binder.getCallingUid() >= Process.FIRST_APPLICATION_UID) { // System app not check
+                        val packageName = callingHelper.callingPackageName
+                        if (!isAllowPackageName(packageName)) {
+                            Log.d(
+                                TAG,
+                                String.format("reject %s service %s", packageName, serviceName)
+                            )
+                            data.setDataPosition(0)
+                            reply?.setDataPosition(0)
+                            return false
+                        }
+                        Log.d(
+                            TAG,
+                            String.format("allow %s get service %s", packageName, serviceName)
+                        )
+                    }
+                    val binder = getServiceInternal(serviceName)
+
+                    Log.d(TAG, String.format("get service %s %s", serviceName, binder))
+                    Log.d(TAG, String.format("data %s, reply %s", data, reply))
+
                     reply?.writeNoException()
-                    reply?.writeStrongBinder(getServiceInternal(data.readString()!!))
+                    reply?.writeStrongBinder(binder)
                     return true
                 }.onFailure {
                     Log.e(TAG, "Transaction error", it)

@@ -1,6 +1,7 @@
 package cn.fkj233.deviceemulator.app
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.navigation.NavigationView
@@ -32,6 +33,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         runCatching {
+            Log.d("DeviceEmulator", "Try to get service")
+            Log.d("DeviceEmulator", XServiceManager.getService(DeviceEmulatorManager.SERVICE_NAME).toString())
             service = XServiceManager.getServiceInterface(DeviceEmulatorManager.SERVICE_NAME)
         }.onFailure {
             it.printStackTrace()
