@@ -13,6 +13,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import cn.fkj233.deviceemulator.R
 import cn.fkj233.deviceemulator.databinding.ActivityMainBinding
+import com.amap.api.maps.MapView
+import com.amap.api.maps.MapsInitializer
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,6 +23,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        MapsInitializer.updatePrivacyShow(this, true, true)
+        MapsInitializer.updatePrivacyAgree(this, true)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

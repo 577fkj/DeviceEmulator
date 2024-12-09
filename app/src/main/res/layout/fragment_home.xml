@@ -6,6 +6,12 @@
     android:layout_height="match_parent"
     tools:context=".app.ui.home.HomeFragment">
 
+
+    <com.amap.api.maps.MapView
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
     <TextView
         android:id="@+id/text_home"
         android:layout_width="match_parent"

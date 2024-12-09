@@ -1,3 +1,8 @@
+import java.util.Properties
+
+val properties = Properties()
+properties.load(project.rootProject.file("local.properties").reader())
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -16,14 +21,54 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val key = properties.getProperty("amap.key")
+        buildConfigField("String", "AMAP_KEY", "\"$key\"")
+
+        val sign = properties.getProperty("amap.signature")
+        if (sign != null && sign.isNotEmpty()) {
+            buildConfigField("String", "AMAP_SIGNATURE", "\"$sign\"")
+        } else {
+            buildConfigField("String", "AMAP_SIGNATURE", "null")
+        }
+
+        val packageName = properties.getProperty("amap.fakePackageName")
+        if (packageName != null && packageName.isNotEmpty()) {
+            buildConfigField("String", "AMAP_FAKE_PACKAGE_NAME", "\"$packageName\"")
+        } else {
+            buildConfigField("String", "AMAP_FAKE_PACKAGE_NAME", "null")
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(properties.getProperty("key.file"))
+            storePassword = properties.getProperty("key.store.password")
+            keyAlias = properties.getProperty("key.alias")
+            keyPassword = properties.getProperty("key.password")
+        }
+
+        getByName("debug") {
+            storeFile = file(properties.getProperty("key.file"))
+            storePassword = properties.getProperty("key.store.password")
+            keyAlias = properties.getProperty("key.alias")
+            keyPassword = properties.getProperty("key.password")
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -61,4 +106,8 @@ dependencies {
 
     compileOnly(project(":hidden-api"))
     implementation(libs.rikka.hiddenapi.runtime)
+
+    implementation(libs.amap.map)
+    implementation(libs.amap.search)
+
 }
