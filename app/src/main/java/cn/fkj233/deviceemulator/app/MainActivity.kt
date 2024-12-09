@@ -12,17 +12,30 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
 import cn.fkj233.deviceemulator.R
+import cn.fkj233.deviceemulator.aidl.IDeviceEmulatorInterface
 import cn.fkj233.deviceemulator.databinding.ActivityMainBinding
+import cn.fkj233.deviceemulator.service.manager.DeviceEmulatorManager
+import cn.fkj233.xservicemanager.XServiceManager
 import com.amap.api.maps.MapView
 import com.amap.api.maps.MapsInitializer
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        var service: IDeviceEmulatorInterface? = null
+    }
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        runCatching {
+            service = XServiceManager.getServiceInterface(DeviceEmulatorManager.SERVICE_NAME)
+        }.onFailure {
+            it.printStackTrace()
+        }
 
         MapsInitializer.updatePrivacyShow(this, true, true)
         MapsInitializer.updatePrivacyAgree(this, true)
