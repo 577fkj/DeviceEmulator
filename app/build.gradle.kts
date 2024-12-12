@@ -108,6 +108,8 @@ dependencies {
 
     compileOnly(project(":hidden-api"))
     implementation(libs.rikka.hiddenapi.runtime)
+    implementation(libs.rikka.hiddenapi.compat)
+    compileOnly(libs.rikka.hiddenapi.stub)
 
     implementation(libs.amap.map)
     implementation(libs.amap.search)

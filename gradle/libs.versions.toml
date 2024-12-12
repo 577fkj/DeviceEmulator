@@ -16,6 +16,8 @@ navigationUiKtx = "2.8.4"
 amap = "9.5.0"
 
 hiddenApi = "4.4.0"
+hiddenApi-stub = "4.3.3"
+
 xposed-api = "82"
 #noinspection GradleDependency
 ezxhelper = "1.0.3"
@@ -36,6 +38,8 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 amap-map = { group = "com.amap.api", name = "3dmap", version.ref = "amap" }
 amap-search = { group = "com.amap.api", name = "search", version.ref = "amap" }
 
+rikka-hiddenapi-stub = { module = "dev.rikka.hidden:stub", version.ref = "hiddenApi-stub" }
+rikka-hiddenapi-compat = { module = "dev.rikka.hidden:compat", version.ref = "hiddenApi-stub" }
 rikka-hiddenapi-annotation = { module = "dev.rikka.tools.refine:annotation", version.ref = "hiddenApi" }
 rikka-hiddenapi-annotation-processor = { module = "dev.rikka.tools.refine:annotation-processor", version.ref = "hiddenApi" }
 rikka-hiddenapi-runtime = { module = "dev.rikka.tools.refine:runtime", version.ref = "hiddenApi" }

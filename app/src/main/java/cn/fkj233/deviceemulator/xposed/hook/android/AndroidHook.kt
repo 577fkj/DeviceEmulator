@@ -15,7 +15,8 @@ object AndroidHook : BaseHook() {
     private var mService : DeviceEmulatorService? = null
 
     private val serviceHooks = mapOf(
-        Context.WIFI_SERVICE to WifiHook()
+        Context.WIFI_SERVICE to WifiHook(),
+        Context.LOCATION_SERVICE to LocationHook()
 //        Context.CONNECTIVITY_SERVICE to ConnectivityHook()
     )
 

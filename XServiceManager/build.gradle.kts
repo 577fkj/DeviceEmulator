@@ -34,4 +34,6 @@ android {
 dependencies {
     implementation(libs.xposed.ezxhelper)
     compileOnly(libs.xposed.api)
+    implementation(libs.rikka.hiddenapi.compat)
+    compileOnly(libs.rikka.hiddenapi.stub)
 }

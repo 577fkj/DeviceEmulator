@@ -1,9 +1,12 @@
 package cn.fkj233.xservicemanager
 
 import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.IPackageManager
+import android.content.pm.PackageInfo
 import android.os.Binder
+import android.os.Build
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Parcel
@@ -15,7 +18,6 @@ import java.io.BufferedReader
 import java.io.FileReader
 import java.io.IOException
 import java.lang.reflect.InvocationTargetException
-import java.util.Locale
 import java.util.Objects
 import android.os.Process
 import com.github.kyuubiran.ezxhelper.utils.paramCount
@@ -26,7 +28,7 @@ typealias AddServiceCallback = (String, IBinder) -> Unit
 
 object XServiceManager {
     private const val TAG = "XServiceManager"
-    private const val DELEGATE_SERVICE = "clipboard"
+    private const val DELEGATE_SERVICE = Context.CLIPBOARD_SERVICE
     private val SERVICE_FETCHERS: MutableMap<String, ServiceFetcher<IBinder>> = ArrayMap()
     private val sCache: HashMap<String, IBinder> = HashMap()
 
@@ -37,6 +39,8 @@ object XServiceManager {
     private var isWhitelist: Boolean = false
 
     private var addServiceCallback: AddServiceCallback? = null
+
+    private var pms: IPackageManager? = null
 
 
     fun setWhiteList(status: Boolean) {
@@ -88,7 +92,7 @@ object XServiceManager {
 
                 if (sName == DELEGATE_SERVICE) {
                     val systemContext = getSystemContext()
-                    val customService = XServiceManagerService(systemContext)
+                    val customService = XServiceManagerService()
                     service.javaClass.findMethod(true) {
                         name == "onTransact"
                     }.hookBefore { tran ->
@@ -110,6 +114,9 @@ object XServiceManager {
                         }
                     }
                     Log.d(TAG, "All service create success")
+                } else if (sName == "package") {
+                    pms = service as IPackageManager
+                    Log.d(TAG, "get $sName success")
                 }
                 addServiceCallback?.let { cb -> cb(sName, service) }
             }
@@ -137,57 +144,51 @@ object XServiceManager {
         return false
     }
 
-    class CallingHelper(private val context: Context) {
-        private var activityManager: ActivityManager? = null
-        private var lastCheckTime: Long = 0
-        private var lastProcessInfo: List<ActivityManager.RunningAppProcessInfo>? = null
-
-        val callingPackageName: String?
-            get() = getCallingPackageName(Binder.getCallingUid(), Binder.getCallingPid())
-
-        private fun getCallingPackageName(uid: Int, pid: Int): String? {
-            if (uid != -1) {
-                var packages: Array<String>? = null
-                try {
-                    packages = context.packageManager.getPackagesForUid(uid)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Get calling package name fail", e)
-                }
-                if (!packages.isNullOrEmpty()) {
-                    return packages[0]
-                }
-            }
-            if (activityManager == null) {
-                activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    class CallingHelper {
+        val callingPackageName: Array<String>?
+            get() {
+                val uid = Binder.getCallingUid()
+                return getPackageNameForUidCompat(uid)
             }
 
-            if (activityManager == null) {
-                return null
-            }
+        fun getPackageNameForUidCompat(uid: Int): Array<String>? {
+            return pms?.getPackagesForUid(uid)
+        }
 
-            if (lastProcessInfo == null || System.currentTimeMillis() - lastCheckTime > 5000) {
-                lastProcessInfo = activityManager!!.runningAppProcesses
-                lastCheckTime = System.currentTimeMillis()
-            }
+        fun getInstalledApplicationsCompat(flags: Long, userId: Int): List<ApplicationInfo>? {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pms?.getInstalledApplications(flags, userId)
+            } else {
+                pms?.getInstalledApplications(flags.toInt(), userId)
+            }?.list
+        }
 
-            for (processInfo in lastProcessInfo!!) {
-                if (processInfo.pid == pid || (pid == -1 && processInfo.uid == uid)) {
-                    return processInfo.processName
-                }
+        fun getPackageUidCompat(packageName: String, flags: Long, userId: Int): Int? {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pms?.getPackageUid(packageName, flags, userId)
+            } else {
+                pms?.getPackageUid(packageName, flags.toInt(), userId)
             }
+        }
 
-            return null
+        fun getPackageInfoCompat(packageName: String, flags: Long, userId: Int): PackageInfo? {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pms?.getPackageInfo(packageName, flags, userId)
+            } else {
+                pms?.getPackageInfo(packageName, flags.toInt(), userId)
+            }
         }
     }
 
-    class XServiceManagerService(context: Context) {
-        private val callingHelper = CallingHelper(context)
+    class XServiceManagerService {
+        private val callingHelper = CallingHelper()
 
-        private fun isAllowPackageName(packageName: String?): Boolean {
+        private fun isAllowPackageName(packageName: Array<String>?): Boolean {
+            val result = packageName?.any { it in packageList } ?: false
             if (isWhitelist) {
-                return packageList.contains(packageName)
+                return result
             }
-            return !packageList.contains(packageName)
+            return !result
         }
 
          fun onTransact(
@@ -209,12 +210,12 @@ object XServiceManager {
                     if (Binder.getCallingUid() >= Process.FIRST_APPLICATION_UID) { // System app not check
                         val packageName = callingHelper.callingPackageName
                         if (!isAllowPackageName(packageName)) {
-                            Log.d(TAG, "reject $packageName service $serviceName")
+                            Log.d(TAG, "reject ${packageName?.contentToString()} service $serviceName")
                             data.setDataPosition(0)
                             reply?.setDataPosition(0)
                             return false
                         }
-                        Log.d(TAG, "allow $packageName get service $serviceName")
+                        Log.d(TAG, "allow ${packageName?.contentToString()} get service $serviceName")
                     }
                     val binder = getServiceInternal(serviceName)
 

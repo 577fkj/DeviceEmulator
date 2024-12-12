@@ -22,7 +22,7 @@ abstract class ServiceHook {
     private val transactMapAfter = hashMapOf<Int, ServiceHookCallback>()
 
 
-    fun init(serviceName: String, clazz: Class<*>, service: IBinder) {
+    open fun init(serviceName: String, clazz: Class<*>, service: IBinder) {
         serviceClass = clazz
         serviceClass.initHookTransact()
         init(serviceName, service)
