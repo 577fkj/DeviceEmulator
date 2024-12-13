@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.rikka.hiddenapi.refine)
+    alias(libs.plugins.jetbrains.kotlin.compose)
 }
 
 android {
@@ -72,34 +73,43 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_19
+        targetCompatibility = JavaVersion.VERSION_19
     }
 
     buildFeatures {
         buildConfig = true
-        viewBinding = true
         aidl = true
+        compose = true
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = JavaVersion.VERSION_19.toString()
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+
+    implementation(libs.androidx.compose.accompanist.permissions)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.material3.window.size)
+    implementation("androidx.compose.material:material:1.7.6")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.xposed.ezxhelper)
     compileOnly(libs.xposed.api)
@@ -111,7 +121,8 @@ dependencies {
     implementation(libs.rikka.hiddenapi.compat)
     compileOnly(libs.rikka.hiddenapi.stub)
 
-    implementation(libs.amap.map)
-    implementation(libs.amap.search)
+//    implementation(libs.amap.map)
+//    implementation(libs.amap.search)
+    implementation("io.github.TheMelody:gd_compose:1.0.7")
 
 }
