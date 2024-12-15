@@ -1,52 +1,20 @@
 package cn.fkj233.deviceemulator.app
 
-import android.Manifest
-import android.content.Context
-import android.content.Intent
-import android.location.LocationManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import cn.fkj233.deviceemulator.aidl.IDeviceEmulatorInterface
-import cn.fkj233.deviceemulator.app.ui.theme.MyApplicationTheme
+import cn.fkj233.deviceemulator.app.ui.theme.DeviceEmulatorApplicationTheme
 import cn.fkj233.deviceemulator.service.manager.DeviceEmulatorManager
 import cn.fkj233.xservicemanager.XServiceManager
 import com.amap.api.maps.MapsInitializer
-import com.amap.api.maps.model.CameraPosition
-import com.amap.api.maps.model.LatLng
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
-import com.melody.map.gd_compose.GDMap
-import com.melody.map.gd_compose.poperties.MapUiSettings
-import com.melody.map.gd_compose.position.rememberCameraPositionState
 
 
 class MainActivity : ComponentActivity() {
@@ -56,8 +24,6 @@ class MainActivity : ComponentActivity() {
         var service: IDeviceEmulatorInterface? = null
     }
 
-    private val viewModel: DeviceEmulatorHomeModel by viewModels()
-
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,10 +32,12 @@ class MainActivity : ComponentActivity() {
         MapsInitializer.updatePrivacyAgree(this, true)
         MapsInitializer.setTerrainEnable(true)
 
+        service = XServiceManager.getServiceInterface(DeviceEmulatorManager.SERVICE_NAME)
+
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
-                DeviceEmulatorApp(calculateWindowSizeClass(this))
+            DeviceEmulatorApplicationTheme {
+                DeviceEmulatorApp()
 //
 //                PermissionScreen()
 //
@@ -101,8 +69,6 @@ class MainActivity : ComponentActivity() {
 //                }
             }
         }
-
-        service = XServiceManager.getServiceInterface(DeviceEmulatorManager.SERVICE_NAME)
     }
 }
 
@@ -117,7 +83,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    MyApplicationTheme {
+    DeviceEmulatorApplicationTheme {
         Greeting("Android")
     }
 }

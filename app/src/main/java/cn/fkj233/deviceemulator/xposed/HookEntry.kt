@@ -1,8 +1,10 @@
 package cn.fkj233.deviceemulator.xposed
 
+import cn.fkj233.deviceemulator.BuildConfig
 import cn.fkj233.deviceemulator.xposed.hook.android.AndroidHook
 import cn.fkj233.deviceemulator.xposed.hook.BaseHook
 import cn.fkj233.deviceemulator.xposed.hook.PhoneHook
+import cn.fkj233.deviceemulator.xposed.hook.SelfHook
 import com.github.kyuubiran.ezxhelper.init.EzXHelperInit
 import com.github.kyuubiran.ezxhelper.utils.Log
 import com.github.kyuubiran.ezxhelper.utils.Log.logexIfThrow
@@ -29,6 +31,7 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
     }
 
     private val hookMap = mapOf(
+        BuildConfig.APPLICATION_ID to SelfHook,
         ANDROID_PACKAGE_NAME to AndroidHook,
         PHONE_PACKAGE_NAME to PhoneHook
     )

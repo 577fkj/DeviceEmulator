@@ -7,4 +7,6 @@ interface IDeviceEmulatorInterface {
 
     IBinder getMockLocationIBinder();
 
+    int getVersion();
+
 }
