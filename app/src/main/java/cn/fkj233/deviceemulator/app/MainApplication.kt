@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.util.Log
 import cn.fkj233.deviceemulator.BuildConfig
+import cn.fkj233.deviceemulator.app.ui.common.utils.SDKUtils
 import cn.fkj233.deviceemulator.common.PMSProxy
 
 class MainApplication: Application() {
@@ -15,8 +16,6 @@ class MainApplication: Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // get meta
-        val meta = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA).metaData
-        Log.d("MainApplication", "meta: $meta")
+        SDKUtils.init(this)
     }
 }

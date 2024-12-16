@@ -1,4 +1,4 @@
-package cn.fkj233.deviceemulator.app.ui.utils
+package cn.fkj233.deviceemulator.app.ui.common.utils
 
 import android.Manifest
 import android.annotation.SuppressLint

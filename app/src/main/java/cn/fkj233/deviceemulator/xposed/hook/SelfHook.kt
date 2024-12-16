@@ -8,7 +8,7 @@ object SelfHook : BaseHook() {
     override val name: String = "Self Hook"
 
     override fun init(lpparam: XC_LoadPackage.LoadPackageParam) {
-        findMethod("cn.fkj233.deviceemulator.app.ui.utils.XposedData") {
+        findMethod("cn.fkj233.deviceemulator.app.ui.common.utils.XposedData") {
             name == "isActive"
         }.hookReplace {
             true

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,19 +33,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cn.fkj233.deviceemulator.app.ui.screen.*
-import cn.fkj233.deviceemulator.app.ui.utils.RequestPermission
+import cn.fkj233.deviceemulator.app.ui.common.utils.RequestPermission
 
 data class BottomItemData(val route: String, val label: String, val icon: ImageVector, val title: String = label, val content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceEmulatorApp() {
-    RequestPermission("定位权限", Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-
     val navController = rememberNavController()
 
     val menuData = listOf(
         BottomItemData("Home", "首页", Icons.Filled.Home, "DeviceEmulator"){ Home() },
+        BottomItemData("MockLocation", "模拟位置", Icons.Filled.LocationOn) { MockLocation() },
         BottomItemData("Settings", "设置", Icons.Filled.Settings) { Setting() }
     )
 
@@ -62,7 +62,7 @@ fun DeviceEmulatorApp() {
         },
         bottomBar = {
             NavigationBar {
-                menuData.forEachIndexed { index, bottomItemData ->
+                menuData.forEach { bottomItemData ->
                     NavigationBarItem(
                         selected = currentDestination?.hierarchy?.any { it.route == bottomItemData.route } == true,
                         onClick = {
@@ -94,7 +94,7 @@ fun DeviceEmulatorApp() {
             .fillMaxSize()
             .padding(innerPadding)
         ) {
-            NavHost(navController = navController, startDestination = menuData[0].route) {
+            NavHost(navController = navController, startDestination = menuData[1].route) {
                 menuData.forEach { item ->
                     composable(item.route, content = item.content)
                 }

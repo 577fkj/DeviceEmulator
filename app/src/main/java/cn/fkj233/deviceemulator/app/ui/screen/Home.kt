@@ -3,23 +3,19 @@ package cn.fkj233.deviceemulator.app.ui.screen
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,11 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.fkj233.deviceemulator.BuildConfig
 import cn.fkj233.deviceemulator.app.MainActivity
-import cn.fkj233.deviceemulator.app.ui.utils.XposedData
+import cn.fkj233.deviceemulator.app.ui.common.utils.XposedData
 
 @Composable
 fun Home() {
-
     val data = mapOf(
         "设备" to "${Build.MANUFACTURER} ${Build.BRAND} ${Build.MODEL} (${Build.DEVICE})",
         "系统版本" to "${Build.VERSION.RELEASE} (${Build.VERSION.SDK_INT})",
