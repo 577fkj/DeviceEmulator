@@ -2,16 +2,25 @@ package cn.fkj233.deviceemulator.app.ui.screen
 
 import android.Manifest
 import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -19,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cn.fkj233.deviceemulator.app.NavAction
 import cn.fkj233.deviceemulator.app.ui.common.launcher.handlerGPSLauncher
 import cn.fkj233.deviceemulator.app.ui.common.utils.requestMultiplePermission
 import cn.fkj233.deviceemulator.app.ui.common.utils.showToast
@@ -78,7 +89,7 @@ fun ShowOpenGPSDialog(onPositiveClick: () -> Unit, onDismiss: () -> Unit) {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MockLocation() {
+fun MockLocation(navAction: NavAction) {
     val viewModel: MockLocationViewModel = viewModel()
     val currentState by viewModel.uiState.collectAsState()
     val cameraPosition = rememberCameraPositionState {
@@ -138,7 +149,7 @@ fun MockLocation() {
         )
     }
 
-    Column (
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 30.dp, end = 30.dp, top = 5.dp)
@@ -156,38 +167,92 @@ fun MockLocation() {
             onMapLoaded = viewModel::checkGpsStatus
         )
 
-        MockInfo(viewModel)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .clickable {
+                    navAction("SelectLocation", arrayListOf())
+                }
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(10.dp)
+                    .wrapContentSize()
+            ) {
+                Text("模拟位置",
+                    fontSize = 12.sp)
+
+                Text("目标：",
+                    fontSize = 16.sp)
+
+                Text("经纬度：",
+                    fontSize = 12.sp)
+
+                Button(modifier = Modifier
+                    .padding(top = 10.dp)
+                    .fillMaxWidth()
+                    .height(40.dp),
+                    onClick = {
+
+                    }
+                ) {
+                    Text("启动模拟")
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(10.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            ) {
+                Text("历史定位",
+                    fontSize = 16.sp)
+                IconButton(
+                    onClick = {
+
+                    },
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "增加")
+                }
+            }
+
+            AddressItem()
+        }
     }
 }
 
 @Composable
-fun MockInfo(viewModel: MockLocationViewModel) {
+fun AddressItem() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(150.dp)
+            .wrapContentHeight()
     ) {
-        Column(
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(10.dp)
-                .fillMaxSize()
-        ) {
-            Text("模拟位置",
-                fontSize = 12.sp)
-
-            Text("目标：")
-
-            Text("经纬度：")
-
-            Button(modifier = Modifier
-                .padding(top = 10.dp)
                 .fillMaxWidth()
-                .height(40.dp),
-                onClick = {
+                .padding(10.dp)
+        ) {
+            Column {
+                Text("地址：", fontSize = 14.sp)
+                Text("经纬度：", fontSize = 14.sp)
+            }
+            IconButton(onClick = {
 
-                }
-            ) {
-                Text("启动模拟")
+            }) {
+                Icon(Icons.Filled.Delete, contentDescription = "删除")
             }
         }
     }
@@ -196,5 +261,4 @@ fun MockInfo(viewModel: MockLocationViewModel) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewMockLocation() {
-    MockInfo(MockLocationViewModel())
 }
