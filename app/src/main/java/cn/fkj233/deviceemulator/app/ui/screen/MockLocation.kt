@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -149,6 +149,12 @@ fun MockLocation(navAction: NavAction) {
         )
     }
 
+    navAction.observerBackData<MockLocationContract.Position?>("pos") {
+        if (it != null) {
+            viewModel.setPosition(it)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -172,7 +178,7 @@ fun MockLocation(navAction: NavAction) {
                 .fillMaxWidth()
                 .wrapContentHeight()
                 .clickable {
-                    navAction("SelectLocation", arrayListOf())
+                    navAction.navigate(":SelectLocation")
                 }
         ) {
             Column(
@@ -183,10 +189,22 @@ fun MockLocation(navAction: NavAction) {
                 Text("模拟位置",
                     fontSize = 12.sp)
 
-                Text("目标：",
+                val address = if (!currentState.position?.address.isNullOrEmpty()) {
+                    "目标：${currentState.position?.address}"
+                } else {
+                    "目标：未知"
+                }
+
+                val latLng = if (currentState.position != null) {
+                    "经纬度：${currentState.position?.lat},${currentState.position?.lng}"
+                } else {
+                    "经纬度：未知"
+                }
+
+                Text(address,
                     fontSize = 16.sp)
 
-                Text("经纬度：",
+                Text(latLng,
                     fontSize = 12.sp)
 
                 Button(modifier = Modifier
@@ -198,6 +216,38 @@ fun MockLocation(navAction: NavAction) {
                     }
                 ) {
                     Text("启动模拟")
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("启用摇杆：",
+                            fontSize = 14.sp)
+                        Switch(
+                            checked = false,
+                            onCheckedChange = {
+
+                            }
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("模拟速度：",
+                            fontSize = 14.sp)
+                        Switch(
+                            checked = false,
+                            onCheckedChange = {
+
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -219,7 +269,7 @@ fun MockLocation(navAction: NavAction) {
                     fontSize = 16.sp)
                 IconButton(
                     onClick = {
-
+                        navAction.navigate(":SelectLocation")
                     },
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = "增加")
@@ -247,7 +297,7 @@ fun AddressItem() {
         ) {
             Column {
                 Text("地址：", fontSize = 14.sp)
-                Text("经纬度：", fontSize = 14.sp)
+                Text("经纬度：", fontSize = 12.sp)
             }
             IconButton(onClick = {
 

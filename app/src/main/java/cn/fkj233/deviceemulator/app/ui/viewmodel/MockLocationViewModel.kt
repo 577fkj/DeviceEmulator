@@ -31,6 +31,7 @@ class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLoca
             grantLocationPermission = false,
             isOpenGps = null,
             locationLatLng = null,
+            position = null
         )
     }
 
@@ -139,5 +140,15 @@ class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLoca
         mLocationClient?.onDestroy()
         mLocationClient = null
         super.onCleared()
+    }
+
+    fun setPosition(position: MockLocationContract.Position) {
+        synchronized(this) {
+            setState {
+                copy(
+                    position = position
+                )
+            }
+        }
     }
 }

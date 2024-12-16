@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,8 +28,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cn.fkj233.deviceemulator.BuildConfig
+import cn.fkj233.deviceemulator.app.DeviceEmulatorApp
 import cn.fkj233.deviceemulator.app.MainActivity
 import cn.fkj233.deviceemulator.app.ui.common.utils.XposedData
+import cn.fkj233.deviceemulator.app.ui.theme.DeviceEmulatorApplicationTheme
 
 @Composable
 fun Home() {
@@ -57,7 +60,7 @@ fun Home() {
                     .clip(RoundedCornerShape(14.dp))
                     .border(
                         width = 1.dp,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.outline,
                         shape = RoundedCornerShape(14.dp)
                     )
                     .padding(start = 15.dp, end = 15.dp, top = 20.dp, bottom = 20.dp),
@@ -79,14 +82,14 @@ fun Home() {
 @Composable
 fun IsActive(active: Boolean, service: Boolean) {
     var icon = Icons.Filled.Done
-    var color = Color.Green
+    var color = MaterialTheme.colorScheme.tertiaryContainer
 
     if (!active) {
         icon = Icons.Filled.Clear
-        color = Color.Red
+        color = MaterialTheme.colorScheme.errorContainer
     } else if (!service) {
         icon = Icons.Filled.Warning
-        color = Color.Yellow
+        color = MaterialTheme.colorScheme.primaryContainer
     }
 
     Card(

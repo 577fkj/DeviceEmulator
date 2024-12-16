@@ -1,6 +1,9 @@
 package cn.fkj233.deviceemulator.app
 
 import android.util.Log
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
@@ -33,11 +38,76 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import cn.fkj233.deviceemulator.app.ui.screen.Home
 import cn.fkj233.deviceemulator.app.ui.screen.MockLocation
+import cn.fkj233.deviceemulator.app.ui.screen.SelectLocation
 import cn.fkj233.deviceemulator.app.ui.screen.Setting
 
-typealias NavAction = (String, List<Pair<String, Any>>) -> Unit
+class NavAction(private val navController: NavController, private val menuData: List<BottomItemData>, private val currentDestination: NavDestination?) {
+    fun getPageData(route: String? = getCurrentRoute()): BaseItemData? {
+        val split = route?.split(":") ?: return null
+        if (split.size == 1) {
+            return menuData.find { it.route == route }
+        }
+        if (split[0] == split[1]) {
+            return menuData.find { it.route == split[0] }
+        }
+        return menuData.find { it.route == split[0] }?.subPageData?.find { it.route == split[1] }
+    }
 
-data class BottomItemData(val route: String, val label: String, val icon: ImageVector, val title: String = label, val customRoute: (NavGraphBuilder.(BottomItemData, NavAction) -> Unit)? = null, val content: @Composable (NavAction) -> Unit = {})
+    fun getCurrentRoute(): String? {
+        return currentDestination?.hierarchy?.first()?.route
+    }
+
+    fun navigate(route: String, vararg args: Pair<String, Any>, clearStack: Boolean = false) {
+        val value = args.joinToString("&") { it.first + "=" + it.second }
+
+        val realRoute = if (route.startsWith(":")) {
+            val mainRouteName = getCurrentRoute()?.split(":")?.get(0) ?: return
+            "$mainRouteName$route"
+        } else {
+            route
+        }
+
+        val fullRoute = when {
+            args.isEmpty() -> realRoute
+            realRoute.contains("?") -> "$realRoute&$value"
+            else -> "$realRoute?$value"
+        }
+
+        Log.d("DeviceEmulator", "DeviceEmulatorApp Route: $fullRoute")
+
+        navController.navigate(fullRoute) {
+            if (clearStack) {
+                popUpTo(0) { inclusive = true }
+            } else {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+            }
+
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    fun popBackStack(vararg data: Pair<String, Any?>) {
+        data.forEach { (key, value) ->
+            navController.previousBackStackEntry?.savedStateHandle?.set(key, value)
+        }
+        navController.popBackStack()
+    }
+
+    fun <T> observerBackData(key: String, block: (T) -> Unit) {
+        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<T>(key)?.observeForever {
+            block(it)
+        }
+    }
+}
+
+open class BaseItemData(open val route: String, open val label: String, open val title: String = label, val isMainPage: Boolean, open val content: @Composable (NavAction) -> Unit = {})
+
+data class BottomItemData(override val route: String, override val label: String, val icon: ImageVector, override val title: String = label, val subPageData: ArrayList<SubItemPageData> = arrayListOf(), override val content: @Composable (NavAction) -> Unit = {}): BaseItemData(route, label, title, true, content)
+
+data class SubItemPageData(override val route: String, override val label: String, override val title: String = label, override val content: @Composable (NavAction) -> Unit): BaseItemData(route, label, title, false, content)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,30 +116,25 @@ fun DeviceEmulatorApp() {
 
     val menuData = listOf(
         BottomItemData("Home", "首页", Icons.Filled.Home, "DeviceEmulator"){ Home() },
-        BottomItemData("MockLocation", "模拟位置", Icons.Filled.LocationOn, customRoute = { item, action ->
-            navigation(startDestination = "MockInfo", route = item.route) {
-                composable("MockInfo") {
-                    MockLocation(action)
-                }
-                composable("SelectLocation") {
-
-                }
-            }
-        }),
+        BottomItemData("MockLocation", "模拟位置", Icons.Filled.LocationOn, subPageData = arrayListOf(
+            SubItemPageData("SelectLocation", "选择位置") { SelectLocation(it) }
+        )) { MockLocation(it) },
         BottomItemData("Settings", "设置", Icons.Filled.Settings) { Setting() }
     )
 
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+
+    val navAction = NavAction(navController, menuData, currentDestination)
 
     Scaffold(modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = menuData.find { it.route == currentDestination?.hierarchy?.first()?.route }?.title ?: "")
+                    Text(text = navAction.getPageData()?.title ?: "")
                 },
                 navigationIcon = {
+                    if (navAction.getPageData()?.isMainPage != false) return@TopAppBar
                     IconButton(
                         onClick = {
                             navController.popBackStack()
@@ -81,7 +146,7 @@ fun DeviceEmulatorApp() {
             )
         },
         bottomBar = {
-            if (currentDestination?.hierarchy?.any { his -> menuData.any { it.route == his.route } } == false) return@Scaffold
+            if (navAction.getPageData()?.isMainPage == false) return@Scaffold
             NavigationBar {
                 menuData.forEach { bottomItemData ->
                     NavigationBarItem(
@@ -115,30 +180,24 @@ fun DeviceEmulatorApp() {
             .fillMaxSize()
             .padding(innerPadding)
         ) {
-            NavHost(navController = navController, startDestination = menuData[1].route) {
-                val navAction = { route: String, args: List<Pair<String, Any>> ->
-                    val value = args.joinToString("&") { it.first + "=" + it.second }
-
-                    val fullRoute = when {
-                        args.isEmpty() -> route
-                        route.contains("?") -> "{$route}$value"
-                        else -> "$route?$value"
-                    }
-                    //拼接路由和参数列表,形成真正的路由
-                    Log.d("starsone", "MyApp跳转路径: $fullRoute")
-
-                    //调用方法进行页面跳转
-                    navController.navigate(fullRoute) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
+            NavHost(
+                navController = navController,
+                startDestination = menuData[1].route,
+                enterTransition = { fadeIn(animationSpec = tween(0)) },
+                exitTransition = { fadeOut(animationSpec = tween(0)) }
+            ) {
                 menuData.forEach { item ->
-                    if (item.customRoute != null) {
-                        item.customRoute.invoke(this, item, navAction)
+                    if (item.subPageData.size > 0) {
+                        navigation(startDestination = "${item.route}:${item.route}", route = item.route) {
+                            composable("${item.route}:${item.route}") {
+                                item.content(navAction)
+                            }
+                            item.subPageData.forEach { subPageData ->
+                                composable("${item.route}:${subPageData.route}") {
+                                    subPageData.content(navAction)
+                                }
+                            }
+                        }
                     } else {
                         composable(item.route) {
                             item.content(navAction)
