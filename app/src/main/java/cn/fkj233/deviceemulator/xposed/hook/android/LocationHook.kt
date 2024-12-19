@@ -128,12 +128,12 @@ class LocationHook : ServiceHook() {
             val newProxyInstance = Proxy.newProxyInstance(classLoader, arrayOf(classLoader!!.loadClass("android.location.IGnssStatusListener"))) { proxy, method, args ->
                 when (method.name) {
                     "onSvStatusChanged" -> {
-                        GnssStatusHidden.wrap()
+//                        GnssStatusHidden.wrap()
                     }
                 }
 
             }
-            addIGnssStatusListener(str, obj2, newProxyInstance)
+//            addIGnssStatusListener(str, obj2, newProxyInstance)
         }
     }
 

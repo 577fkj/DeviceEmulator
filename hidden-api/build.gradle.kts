@@ -22,6 +22,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.annotation:annotation:1.9.1")
     annotationProcessor(libs.rikka.hiddenapi.annotation.processor)
     compileOnly(libs.rikka.hiddenapi.annotation)
 }
