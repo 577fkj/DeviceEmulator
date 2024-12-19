@@ -16,7 +16,7 @@ abstract class ServiceHook {
     abstract val name: String
     var isInit: Boolean = false
     var descriptor = ""
-    private lateinit var serviceClass: Class<*>
+    lateinit var serviceClass: Class<*>
 
     private val transactMapBefore = hashMapOf<Int, ServiceHookCallback>()
     private val transactMapAfter = hashMapOf<Int, ServiceHookCallback>()

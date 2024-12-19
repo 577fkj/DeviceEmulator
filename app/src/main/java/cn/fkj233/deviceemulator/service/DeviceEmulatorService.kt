@@ -5,9 +5,17 @@ import android.os.IBinder
 import cn.fkj233.deviceemulator.BuildConfig
 import cn.fkj233.deviceemulator.aidl.IDeviceEmulatorInterface
 
-class DeviceEmulatorService(context: Context) : IDeviceEmulatorInterface.Stub() {
-    private var mockDeviceInfoService: MockDeviceInfoService = MockDeviceInfoService(context)
-    private var mockLocationService: MockLocationService = MockLocationService(context)
+class DeviceEmulatorService : IDeviceEmulatorInterface.Stub() {
+    private var mockDeviceInfoService: MockDeviceInfoService = MockDeviceInfoService()
+    private var mockLocationService: MockLocationService = MockLocationService()
+
+    fun getMockDeviceInfoService(): MockDeviceInfoService {
+        return mockDeviceInfoService
+    }
+
+    fun getMockLocationService(): MockLocationService {
+        return mockLocationService
+    }
 
     override fun getMockDeviceInfoIBinder(): IBinder {
         return mockDeviceInfoService.asBinder()

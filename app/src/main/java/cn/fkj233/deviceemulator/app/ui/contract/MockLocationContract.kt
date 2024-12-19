@@ -66,5 +66,7 @@ class MockLocationContract {
 
     sealed class Effect : IUiEffect {
         internal data class ShowToast(val msg: String?) : Effect()
+        internal data class AddLocation(val position: Position) : Effect()
+        internal data class RemoveLocation(val index: Int) : Effect()
     }
 }

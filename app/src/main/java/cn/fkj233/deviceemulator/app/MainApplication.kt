@@ -1,11 +1,10 @@
 package cn.fkj233.deviceemulator.app
 
 import android.app.Application
-import android.content.pm.PackageManager
-import android.util.Log
-import cn.fkj233.deviceemulator.BuildConfig
 import cn.fkj233.deviceemulator.app.ui.common.utils.SDKUtils
-import cn.fkj233.deviceemulator.common.PMSProxy
+import com.chibatching.kotpref.Kotpref
+import com.chibatching.kotpref.gsonpref.gson
+import com.google.gson.Gson
 
 class MainApplication: Application() {
 //    init {
@@ -17,5 +16,7 @@ class MainApplication: Application() {
     override fun onCreate() {
         super.onCreate()
         SDKUtils.init(this)
+        Kotpref.init(this)
+        Kotpref.gson = Gson()
     }
 }

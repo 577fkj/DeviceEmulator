@@ -123,6 +123,12 @@ dependencies {
 
 //    implementation(libs.amap.map)
 //    implementation(libs.amap.search)
-    implementation("io.github.TheMelody:gd_compose:1.0.7")
+    implementation(libs.gd.compose)
+
+    // Kotpref
+    implementation(libs.kotpref)
+    implementation(libs.kotpref.enum.support)
+    implementation(libs.kotpref.gson.support)
+    implementation(libs.gson)
 
 }

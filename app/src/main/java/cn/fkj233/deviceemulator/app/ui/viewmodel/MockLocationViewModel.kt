@@ -7,6 +7,7 @@ import android.provider.Settings
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
 import cn.fkj233.deviceemulator.app.MainApplication
+import cn.fkj233.deviceemulator.app.pref.LocationData
 import cn.fkj233.deviceemulator.app.ui.contract.MockLocationContract
 import cn.fkj233.deviceemulator.app.ui.common.base.BaseViewModel
 import cn.fkj233.deviceemulator.app.ui.common.utils.SDKUtils
@@ -24,6 +25,16 @@ import kotlinx.coroutines.delay
 
 class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLocationContract.State, MockLocationContract.Effect>(), LocationSource, AMapLocationListener {
     override fun createInitialState(): MockLocationContract.State {
+        val location = LocationData.historyLocation.list.firstOrNull()
+        val position = if (location!= null && location.latitude != 0.0 && location.longitude != 0.0) {
+            MockLocationContract.Position(
+                location.latitude,
+                location.longitude,
+                location.address
+            )
+        } else {
+            null
+        }
         return MockLocationContract.State(
             mapProperties = MockLocationRepository.initMapProperties(),
             mapUiSettings = MockLocationRepository.initMapUiSettings(),
@@ -31,7 +42,7 @@ class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLoca
             grantLocationPermission = false,
             isOpenGps = null,
             locationLatLng = null,
-            position = null
+            position = position
         )
     }
 
@@ -148,6 +159,17 @@ class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLoca
                 copy(
                     position = position
                 )
+            }
+            setEffect {
+                MockLocationContract.Effect.AddLocation(position)
+            }
+        }
+    }
+
+    fun removePosition(index: Int) {
+        synchronized(this) {
+            setEffect {
+                MockLocationContract.Effect.RemoveLocation(index)
             }
         }
     }

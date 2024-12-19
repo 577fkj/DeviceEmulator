@@ -5,8 +5,7 @@ import cn.fkj233.deviceemulator.aidl.IDeviceEmulatorInterface
 import cn.fkj233.deviceemulator.aidl.mock.IMockDeviceInfoInterface
 import cn.fkj233.deviceemulator.aidl.mock.IMockLocationInterface
 
-class DeviceEmulatorManager(private val context: Context, private val service: IDeviceEmulatorInterface) {
-
+class DeviceEmulatorManager(private val service: IDeviceEmulatorInterface) {
     companion object {
         const val SERVICE_NAME = "device_emulator"
     }
@@ -19,5 +18,7 @@ class DeviceEmulatorManager(private val context: Context, private val service: I
         return IMockLocationInterface.Stub.asInterface(service.mockLocationIBinder)
     }
 
-
+    fun getVersion(): Int {
+        return service.version
+    }
 }

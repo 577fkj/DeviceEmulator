@@ -207,7 +207,8 @@ object XServiceManager {
                         return false
                     }
 
-                    if (Binder.getCallingUid() >= Process.FIRST_APPLICATION_UID) { // System app not check
+                    val uid = Binder.getCallingUid()
+                    if (uid == Process.SHELL_UID || uid >= Process.FIRST_APPLICATION_UID) { // System app not check but shell check
                         val packageName = callingHelper.callingPackageName
                         if (!isAllowPackageName(packageName)) {
                             Log.d(TAG, "reject ${packageName?.contentToString()} service $serviceName")

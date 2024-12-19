@@ -1,13 +1,13 @@
 // IMockLocationInterface.aidl
 package cn.fkj233.deviceemulator.aidl.mock;
 
-// Declare any non-default types here with import statements
+import android.location.Location;
 
 interface IMockLocationInterface {
-    /**
-     * Demonstrates some basic types that you can use as parameters
-     * and return values in AIDL.
-     */
-    void basicTypes(int anInt, long aLong, boolean aBoolean, float aFloat,
-            double aDouble, String aString);
+
+    void setMockStatus(in boolean status);
+    boolean getMockStatus();
+
+    void setMockLocation(in Location location);
+    Location getMockLocation();
 }

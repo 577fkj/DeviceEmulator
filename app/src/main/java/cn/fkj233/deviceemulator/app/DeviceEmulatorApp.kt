@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,6 +41,7 @@ import cn.fkj233.deviceemulator.app.ui.screen.Home
 import cn.fkj233.deviceemulator.app.ui.screen.MockLocation
 import cn.fkj233.deviceemulator.app.ui.screen.SelectLocation
 import cn.fkj233.deviceemulator.app.ui.screen.Setting
+import kotlinx.coroutines.flow.MutableStateFlow
 
 class NavAction(private val navController: NavController, private val menuData: List<BottomItemData>, private val currentDestination: NavDestination?) {
     fun getPageData(route: String? = getCurrentRoute()): BaseItemData? {
@@ -89,16 +91,37 @@ class NavAction(private val navController: NavController, private val menuData: 
         }
     }
 
+//    fun popBackStack(vararg data: Pair<String, Any?>) {
+//        data.forEach { (key, value) ->
+//            navController.previousBackStackEntry?.savedStateHandle?.set(key, value)
+//        }
+//        navController.popBackStack()
+//    }
     fun popBackStack(vararg data: Pair<String, Any?>) {
-        data.forEach { (key, value) ->
-            navController.previousBackStackEntry?.savedStateHandle?.set(key, value)
+        val previousEntry = navController.previousBackStackEntry
+        previousEntry?.savedStateHandle?.let { savedStateHandle ->
+            data.forEach { (key, value) ->
+                savedStateHandle[key] = value
+            }
         }
         navController.popBackStack()
     }
 
-    fun <T> observerBackData(key: String, block: (T) -> Unit) {
-        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<T>(key)?.observeForever {
-            block(it)
+//    fun <T> observerBackData(key: String, block: (T) -> Unit) {
+//        navController.currentBackStackEntry?.savedStateHandle?.getLiveData<T>(key)?.observeForever {
+//            block(it)
+//        }
+//    }
+    @Composable
+    fun <T> ObserverBackData(key: String, onResult: (T) -> Unit) {
+        val navBackStackEntry = navController.currentBackStackEntryAsState().value
+
+        navBackStackEntry?.savedStateHandle?.getStateFlow<T?>(key, null)?.collectAsState()?.value?.let { result ->
+            result.let {
+                onResult(it)
+                // 清除数据，防止多次回调
+                navBackStackEntry.savedStateHandle[key] = null
+            }
         }
     }
 }

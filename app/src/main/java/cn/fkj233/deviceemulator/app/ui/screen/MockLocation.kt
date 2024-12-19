@@ -1,7 +1,9 @@
 package cn.fkj233.deviceemulator.app.ui.screen
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.util.Log
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,9 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -26,7 +31,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +45,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.fkj233.deviceemulator.app.NavAction
+import cn.fkj233.deviceemulator.app.pref.LocationData
+import cn.fkj233.deviceemulator.app.pref.LocationInfo
+import cn.fkj233.deviceemulator.app.pref.add
+import cn.fkj233.deviceemulator.app.pref.remove
 import cn.fkj233.deviceemulator.app.ui.common.launcher.handlerGPSLauncher
 import cn.fkj233.deviceemulator.app.ui.common.utils.requestMultiplePermission
 import cn.fkj233.deviceemulator.app.ui.common.utils.showToast
@@ -96,6 +108,7 @@ fun MockLocation(navAction: NavAction) {
         // 不预加载显示默认北京的位置
         position = CameraPosition(LatLng(0.0, 0.0), 18f, 0f, 0f)
     }
+    val historyLocation = remember { mutableStateListOf(*LocationData.historyLocation.list.toTypedArray()) }
 
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.onEach {
@@ -103,6 +116,15 @@ fun MockLocation(navAction: NavAction) {
                 is MockLocationContract.Effect.ShowToast -> {
                     showToast(it.msg)
                     Log.d("DeviceEmulator", "MockLocation: ${it.msg}")
+                }
+                is MockLocationContract.Effect.AddLocation -> {
+                    val data = LocationInfo(it.position.lat, it.position.lng, it.position.address)
+                    historyLocation.add(data)
+                    LocationData.historyLocation.add(data)
+                }
+                is MockLocationContract.Effect.RemoveLocation -> {
+                    historyLocation.removeAt(it.index)
+                    LocationData.historyLocation.remove(it.index)
                 }
             }
         }.collect()
@@ -149,7 +171,7 @@ fun MockLocation(navAction: NavAction) {
         )
     }
 
-    navAction.observerBackData<MockLocationContract.Position?>("pos") {
+    navAction.ObserverBackData<MockLocationContract.Position?>("pos") {
         if (it != null) {
             viewModel.setPosition(it)
         }
@@ -190,22 +212,40 @@ fun MockLocation(navAction: NavAction) {
                     fontSize = 12.sp)
 
                 val address = if (!currentState.position?.address.isNullOrEmpty()) {
-                    "目标：${currentState.position?.address}"
+                    "${currentState.position?.address}"
                 } else {
-                    "目标：未知"
+                    "未知"
                 }
 
                 val latLng = if (currentState.position != null) {
-                    "经纬度：${currentState.position?.lat},${currentState.position?.lng}"
+                    "${currentState.position?.lat},${currentState.position?.lng}"
                 } else {
-                    "经纬度：未知"
+                    "未知"
                 }
 
-                Text(address,
-                    fontSize = 16.sp)
+                Row {
+                    Text("目标：",
+                        fontSize = 16.sp)
+                    Text(
+                        address,
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .basicMarquee(),
+                        maxLines = 1
+                    )
+                }
 
-                Text(latLng,
-                    fontSize = 12.sp)
+                Row {
+                    Text("经纬度：",
+                        fontSize = 12.sp)
+                    Text(
+                        latLng,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .basicMarquee(),
+                        maxLines = 1
+                    )
+                }
 
                 Button(modifier = Modifier
                     .padding(top = 10.dp)
@@ -265,7 +305,7 @@ fun MockLocation(navAction: NavAction) {
                     .fillMaxWidth()
                     .wrapContentHeight()
             ) {
-                Text("历史定位",
+                Text("历史定位 (${historyLocation.size})",
                     fontSize = 16.sp)
                 IconButton(
                     onClick = {
@@ -276,15 +316,26 @@ fun MockLocation(navAction: NavAction) {
                 }
             }
 
-            AddressItem()
+            val scroll = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .verticalScroll(scroll)
+            ) {
+                historyLocation.forEachIndexed { index, info ->
+                    AddressItem(index, info, viewModel)
+                }
+            }
         }
     }
 }
 
 @Composable
-fun AddressItem() {
+fun AddressItem(index: Int, info: LocationInfo, viewModel: MockLocationViewModel) {
     Card(
         modifier = Modifier
+            .padding(bottom = 10.dp)
             .fillMaxWidth()
             .wrapContentHeight()
     ) {
@@ -293,15 +344,50 @@ fun AddressItem() {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp)
+                .padding(15.dp)
         ) {
-            Column {
-                Text("地址：", fontSize = 14.sp)
-                Text("经纬度：", fontSize = 12.sp)
+            Column(
+                modifier = Modifier
+                    .weight(10f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "地址：",
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        info.address,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .basicMarquee(),
+                        maxLines = 1
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "经纬度：",
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        "${info.latitude}, ${info.longitude}",
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .basicMarquee(),
+                        maxLines = 1
+                    )
+                }
             }
-            IconButton(onClick = {
-
-            }) {
+            IconButton(
+                onClick = {
+                    viewModel.removePosition(index)
+                },
+                modifier = Modifier
+                    .weight(1f)
+            ) {
                 Icon(Icons.Filled.Delete, contentDescription = "删除")
             }
         }
@@ -311,4 +397,11 @@ fun AddressItem() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewMockLocation() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp)
+    ) {
+        AddressItem(0, LocationInfo(0.0, 0.0, "北京市"), viewModel())
+    }
 }
