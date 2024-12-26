@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import cn.fkj233.deviceemulator.BuildConfig
 import cn.fkj233.deviceemulator.app.DeviceEmulatorApp
 import cn.fkj233.deviceemulator.app.MainActivity
+import cn.fkj233.deviceemulator.app.manager.DeviceEmulatorManager
 import cn.fkj233.deviceemulator.app.ui.common.utils.XposedData
 import cn.fkj233.deviceemulator.app.ui.theme.DeviceEmulatorApplicationTheme
 
@@ -41,7 +42,7 @@ fun Home() {
         "系统架构" to Build.SUPPORTED_ABIS.joinToString(", "),
         "管理器包名" to BuildConfig.APPLICATION_ID,
         "管理器版本" to "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-        "服务版本" to MainActivity.service?.version.toString()
+        "服务版本" to DeviceEmulatorManager.getDefault().getVersion().toString()
     )
 
     Box(
@@ -50,7 +51,7 @@ fun Home() {
             .padding(start = 10.dp, end = 10.dp, top = 5.dp)
     ) {
         Column{
-            IsActive(XposedData.isActive(), MainActivity.service != null)
+            IsActive(XposedData.isActive(), DeviceEmulatorManager.getDefault().getVersion() != 0)
 
             Column(
                 modifier = Modifier

@@ -1,10 +1,10 @@
 package cn.fkj233.deviceemulator.app.ui.screen
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
@@ -31,7 +30,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -45,9 +43,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.fkj233.deviceemulator.app.NavAction
-import cn.fkj233.deviceemulator.app.pref.LocationData
-import cn.fkj233.deviceemulator.app.pref.LocationInfo
+import cn.fkj233.deviceemulator.app.manager.DeviceEmulatorManager
+import cn.fkj233.deviceemulator.app.pref.AddressData
+import cn.fkj233.deviceemulator.app.pref.AddressInfo
 import cn.fkj233.deviceemulator.app.pref.add
+import cn.fkj233.deviceemulator.app.pref.convertToLocation
 import cn.fkj233.deviceemulator.app.pref.remove
 import cn.fkj233.deviceemulator.app.ui.common.launcher.handlerGPSLauncher
 import cn.fkj233.deviceemulator.app.ui.common.utils.requestMultiplePermission
@@ -108,7 +108,12 @@ fun MockLocation(navAction: NavAction) {
         // 不预加载显示默认北京的位置
         position = CameraPosition(LatLng(0.0, 0.0), 18f, 0f, 0f)
     }
-    val historyLocation = remember { mutableStateListOf(*LocationData.historyLocation.list.toTypedArray()) }
+    val historyLocation = remember { mutableStateListOf(*AddressData.historyAddress.list.toTypedArray()) }
+    val service = DeviceEmulatorManager.getDefault().getMockLocationService()
+
+    viewModel.setMockLocationStatus(service.mockStatus)
+
+    viewModel.setMapDarkMode(isSystemInDarkTheme())
 
     LaunchedEffect(viewModel.effect) {
         viewModel.effect.onEach {
@@ -118,13 +123,17 @@ fun MockLocation(navAction: NavAction) {
                     Log.d("DeviceEmulator", "MockLocation: ${it.msg}")
                 }
                 is MockLocationContract.Effect.AddLocation -> {
-                    val data = LocationInfo(it.position.lat, it.position.lng, it.position.address)
+                    val data = AddressInfo(it.position.lat, it.position.lng, it.position.address)
                     historyLocation.add(data)
-                    LocationData.historyLocation.add(data)
+                    AddressData.historyAddress.add(data)
                 }
                 is MockLocationContract.Effect.RemoveLocation -> {
                     historyLocation.removeAt(it.index)
-                    LocationData.historyLocation.remove(it.index)
+                    AddressData.historyAddress.remove(it.index)
+                }
+                is MockLocationContract.Effect.MockStatusChanged -> {
+                    service.mockLocation = currentState.position?.toAddressInfo()?.convertToLocation()
+                    service.mockStatus = it.isMocking
                 }
             }
         }.collect()
@@ -251,11 +260,13 @@ fun MockLocation(navAction: NavAction) {
                     .padding(top = 10.dp)
                     .fillMaxWidth()
                     .height(40.dp),
-                    onClick = {
-
-                    }
+                    onClick = viewModel::switchMockLocationStatus
                 ) {
-                    Text("启动模拟")
+                    if (currentState.isMocking) {
+                        Text("停止模拟")
+                    } else {
+                        Text("启动模拟")
+                    }
                 }
 
                 Row(
@@ -332,7 +343,7 @@ fun MockLocation(navAction: NavAction) {
 }
 
 @Composable
-fun AddressItem(index: Int, info: LocationInfo, viewModel: MockLocationViewModel) {
+fun AddressItem(index: Int, info: AddressInfo, viewModel: MockLocationViewModel) {
     Card(
         modifier = Modifier
             .padding(bottom = 10.dp)
@@ -402,6 +413,6 @@ fun PreviewMockLocation() {
             .fillMaxSize()
             .padding(10.dp)
     ) {
-        AddressItem(0, LocationInfo(0.0, 0.0, "北京市"), viewModel())
+        AddressItem(0, AddressInfo(0.0, 0.0, "北京市"), viewModel())
     }
 }

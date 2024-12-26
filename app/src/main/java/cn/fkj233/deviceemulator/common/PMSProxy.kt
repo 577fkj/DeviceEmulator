@@ -23,6 +23,7 @@ object PMSProxy {
             if (signatureData != null) {
                 val fakeSignature = Signature(Base64.decode(signatureData, Base64.DEFAULT))
                 val originalCreator = PackageInfo.CREATOR
+                @Suppress("DEPRECATION")
                 val creator = object : Parcelable.Creator<PackageInfo> {
                     override fun createFromParcel(source: Parcel): PackageInfo {
                         val packageInfo = originalCreator.createFromParcel(source)

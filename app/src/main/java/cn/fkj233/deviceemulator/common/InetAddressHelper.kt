@@ -1,8 +1,6 @@
 package cn.fkj233.deviceemulator.common
 
-import android.util.Log
 import java.net.InetAddress
-import java.nio.ByteBuffer
 
 object InetAddressHelper {
     private fun ipv4AddressVerify(ip: String): Boolean {

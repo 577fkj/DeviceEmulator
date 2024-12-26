@@ -2,6 +2,7 @@ package cn.fkj233.deviceemulator.app.ui.contract
 
 import android.os.Parcel
 import android.os.Parcelable
+import cn.fkj233.deviceemulator.app.pref.AddressInfo
 import cn.fkj233.deviceemulator.app.ui.common.state.IUiEffect
 import cn.fkj233.deviceemulator.app.ui.common.state.IUiEvent
 import cn.fkj233.deviceemulator.app.ui.common.state.IUiState
@@ -46,6 +47,10 @@ class MockLocationContract {
             }
         }
 
+        fun toAddressInfo(): AddressInfo {
+            return AddressInfo(lat, lng, address)
+        }
+
     }
 
     data class State(
@@ -61,12 +66,15 @@ class MockLocationContract {
         val mapUiSettings: MapUiSettings,
 
         // 位置信息
-        val position: Position? = null
+        val position: Position?,
+
+        val isMocking: Boolean
     ) : IUiState
 
     sealed class Effect : IUiEffect {
         internal data class ShowToast(val msg: String?) : Effect()
         internal data class AddLocation(val position: Position) : Effect()
         internal data class RemoveLocation(val index: Int) : Effect()
+        internal data class MockStatusChanged(val isMocking: Boolean) : Effect()
     }
 }

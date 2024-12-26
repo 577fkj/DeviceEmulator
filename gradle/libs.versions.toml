@@ -16,6 +16,7 @@ gd_compose = "1.0.7"
 hiddenApi = "4.4.0"
 hiddenApi-stub = "4.3.3"
 
+material = "1.7.6"
 navigationCompose = "2.8.5"
 xposed-api = "82"
 #noinspection GradleDependency
@@ -27,6 +28,7 @@ kotpref = "2.13.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-compose-material = { module = "androidx.compose.material:material", version.ref = "material" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

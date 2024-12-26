@@ -1,4 +1,4 @@
-package cn.fkj233.deviceemulator.service
+package cn.fkj233.deviceemulator.xposed.service
 
 import android.content.Context
 import cn.fkj233.deviceemulator.aidl.mock.IMockDeviceInfoInterface

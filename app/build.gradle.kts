@@ -101,7 +101,7 @@ dependencies {
     implementation(libs.androidx.compose.accompanist.permissions)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material3.window.size)
-    implementation("androidx.compose.material:material:1.7.6")
+    implementation(libs.androidx.compose.material)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

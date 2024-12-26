@@ -32,6 +32,7 @@ import com.amap.api.location.AMapLocationClientOption
 import com.amap.api.location.AMapLocationListener
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.MyLocationStyle
+import com.melody.map.gd_compose.model.MapType
 import com.melody.map.gd_compose.poperties.MapUiSettings
 import com.melody.map.gd_compose.poperties.MapProperties
 
@@ -44,7 +45,7 @@ import com.melody.map.gd_compose.poperties.MapProperties
  */
 object MockLocationRepository {
 
-    fun initMapProperties() : MapProperties{
+    fun initMapProperties(isDark: Boolean = false) : MapProperties{
         // 注意：这里不要用BitmapDescriptorFactory.fromResource(你的新图)，不然会出现不生效的情况
         val iconBitmap = BitmapFactory.decodeResource(SDKUtils.getApplicationContext().resources, R.drawable.ic_map_location_self)
         val locationIcon = BitmapDescriptorFactory.fromBitmap(iconBitmap)
@@ -61,7 +62,8 @@ object MockLocationRepository {
                 radiusFillColor(Color.argb(100, 0, 0, 180))
                 // 设置圆形的边框粗细
                 strokeWidth(0.1f)
-            }
+            },
+            mapType = if (isDark) MapType.NIGHT else MapType.NORMAL
         )
     }
 

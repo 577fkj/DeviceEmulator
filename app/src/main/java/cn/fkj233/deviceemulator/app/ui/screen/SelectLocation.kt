@@ -53,7 +53,6 @@ import cn.fkj233.deviceemulator.app.ui.common.utils.showToast
 import cn.fkj233.deviceemulator.app.ui.contract.MockLocationContract
 import cn.fkj233.deviceemulator.app.ui.contract.SelectLocationContract
 import cn.fkj233.deviceemulator.app.ui.viewmodel.SelectLocationViewModel
-import com.amap.api.maps.AMapOptions
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.melody.map.gd_compose.GDMap

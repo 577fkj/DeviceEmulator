@@ -3,36 +3,24 @@ package cn.fkj233.deviceemulator.xposed
 import android.annotation.SuppressLint
 import android.os.Binder
 import android.os.Process
-import cn.fkj233.deviceemulator.service.DeviceEmulatorService
-import cn.fkj233.deviceemulator.service.manager.DeviceEmulatorManager
-import cn.fkj233.deviceemulator.service.manager.MockDeviceInfoManager
-import cn.fkj233.deviceemulator.service.manager.MockLocationManager
+import cn.fkj233.deviceemulator.xposed.service.DeviceEmulatorService
 
 object ServiceHelper {
-    private var deviceEmulatorService: DeviceEmulatorService = DeviceEmulatorService()
+    private val deviceEmulatorService: DeviceEmulatorService = DeviceEmulatorService()
+    private val mockLocationService = deviceEmulatorService.getMockLocationService()
+    private val mockDeviceInfoService = deviceEmulatorService.getMockDeviceInfoService()
 
-    private var deviceEmulatorManager: DeviceEmulatorManager = DeviceEmulatorManager(deviceEmulatorService)
-    private var mockLocationManager: MockLocationManager = MockLocationManager(deviceEmulatorManager.getMockLocationService())
-    private var mockDeviceInfoManager: MockDeviceInfoManager = MockDeviceInfoManager(deviceEmulatorService.getMockDeviceInfoService())
+    fun getDeviceEmulatorService() = deviceEmulatorService
+    fun getMockLocationService() = mockLocationService
+    fun getMockDeviceInfoService() = mockDeviceInfoService
 
-    fun getDeviceEmulatorService(): DeviceEmulatorService {
-        return deviceEmulatorService
-    }
 
-    fun getDeviceEmulatorManager(): DeviceEmulatorManager {
-        return deviceEmulatorManager
-    }
-
-    fun getMockLocationManager(): MockLocationManager {
-        return mockLocationManager
-    }
-
-    fun getMockDeviceInfoManager(): MockDeviceInfoManager {
-        return mockDeviceInfoManager
+    fun notifyRequestLocation(packageName: String, uid: Int, isSystem: Boolean) {
+        mockLocationService.notifyLocationChanged(packageName, uid, isSystem)
     }
 
     fun isMocking(): Boolean {
-        return mockLocationManager.getMockStatus()
+        return mockLocationService.mockStatus
     }
 
     fun isHook(): Boolean {

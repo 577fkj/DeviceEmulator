@@ -2,12 +2,11 @@ package cn.fkj233.deviceemulator.xposed.hook.android
 
 import android.content.Context
 import cn.fkj233.deviceemulator.BuildConfig
-import cn.fkj233.deviceemulator.service.DeviceEmulatorService
-import cn.fkj233.deviceemulator.service.manager.DeviceEmulatorManager
-import cn.fkj233.deviceemulator.service.manager.MockDeviceInfoManager
-import cn.fkj233.deviceemulator.service.manager.MockLocationManager
+import cn.fkj233.deviceemulator.app.manager.DeviceEmulatorManager
 import cn.fkj233.deviceemulator.xposed.ServiceHelper
 import cn.fkj233.deviceemulator.xposed.hook.BaseHook
+import cn.fkj233.deviceemulator.xposed.hook.android.service.LocationHook
+import cn.fkj233.deviceemulator.xposed.hook.android.service.WifiHook
 import cn.fkj233.xservicemanager.XServiceManager
 import com.github.kyuubiran.ezxhelper.utils.Log
 import de.robv.android.xposed.callbacks.XC_LoadPackage

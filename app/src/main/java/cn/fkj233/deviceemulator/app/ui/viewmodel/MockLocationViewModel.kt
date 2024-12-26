@@ -6,8 +6,7 @@ import android.location.LocationManager
 import android.provider.Settings
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.result.ActivityResult
-import cn.fkj233.deviceemulator.app.MainApplication
-import cn.fkj233.deviceemulator.app.pref.LocationData
+import cn.fkj233.deviceemulator.app.pref.AddressData
 import cn.fkj233.deviceemulator.app.ui.contract.MockLocationContract
 import cn.fkj233.deviceemulator.app.ui.common.base.BaseViewModel
 import cn.fkj233.deviceemulator.app.ui.common.utils.SDKUtils
@@ -25,7 +24,7 @@ import kotlinx.coroutines.delay
 
 class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLocationContract.State, MockLocationContract.Effect>(), LocationSource, AMapLocationListener {
     override fun createInitialState(): MockLocationContract.State {
-        val location = LocationData.historyLocation.list.firstOrNull()
+        val location = AddressData.historyAddress.list.firstOrNull()
         val position = if (location!= null && location.latitude != 0.0 && location.longitude != 0.0) {
             MockLocationContract.Position(
                 location.latitude,
@@ -42,7 +41,8 @@ class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLoca
             grantLocationPermission = false,
             isOpenGps = null,
             locationLatLng = null,
-            position = position
+            position = position,
+            isMocking = false
         )
     }
 
@@ -112,6 +112,20 @@ class MockLocationViewModel : BaseViewModel<MockLocationContract.Event, MockLoca
             mLocationClient = client
             mLocationOption = option
         }
+    }
+
+    fun setMapDarkMode(isDarkMode: Boolean) {
+        setState { copy(mapProperties = MockLocationRepository.initMapProperties(isDarkMode)) }
+    }
+
+    fun setMockLocationStatus(isMocking: Boolean) {
+        setState { copy(isMocking = isMocking) }
+    }
+
+    fun switchMockLocationStatus() {
+        val isMocking = !currentState.isMocking
+        setState { copy(isMocking = isMocking) }
+        setEffect { MockLocationContract.Effect.MockStatusChanged(isMocking) }
     }
 
     override fun onLocationChanged(amapLocation: AMapLocation?) {

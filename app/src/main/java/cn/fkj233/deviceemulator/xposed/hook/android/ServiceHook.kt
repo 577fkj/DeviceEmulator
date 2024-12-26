@@ -8,8 +8,45 @@ import com.github.kyuubiran.ezxhelper.utils.findFieldOrNull
 import com.github.kyuubiran.ezxhelper.utils.findMethodOrNull
 import com.github.kyuubiran.ezxhelper.utils.hookAfter
 import com.github.kyuubiran.ezxhelper.utils.hookBefore
+import de.robv.android.xposed.XC_MethodHook
 
 typealias ServiceHookCallback = (Int, Parcel, Parcel?) -> Boolean
+
+fun Class<*>.hookMethodBefore(name: String, cb: (XC_MethodHook. MethodHookParam) -> Unit): Boolean {
+    return if (findMethodOrNull(true) {
+        this.name == name
+    }?.hookBefore {
+        runCatching {
+            cb(it)
+        }.onFailure {
+            Log.ix("$name: before run error", it)
+        }
+    } != null) {
+        Log.ix("$name: Hooked before $name")
+        true
+    } else {
+        Log.ix("$name: Method $name not found")
+        false
+    }
+}
+
+fun Class<*>.hookMethodAfter(name: String, cb: (XC_MethodHook.MethodHookParam) -> Unit): Boolean {
+    return if (findMethodOrNull(true) {
+        this.name == name
+    }?.hookAfter {
+        runCatching {
+            cb(it)
+        }.onFailure {
+            Log.ix("$name: after run error", it)
+        }
+    } != null) {
+        Log.ix("$name: Hooked after $name")
+        true
+    } else {
+        Log.ix("$name: Method $name not found")
+        false
+    }
+}
 
 abstract class ServiceHook {
     abstract fun init(serviceName: String, service: IBinder)
@@ -29,6 +66,9 @@ abstract class ServiceHook {
     }
 
     private fun Class<*>.initHookTransact() {
+        Log.ix("$name: Init hook transact")
+        Log.ix("$name: Classloader $classLoader")
+
         val method = this.findMethodOrNull(true) {
             name == "onTransact"
         }
@@ -50,10 +90,12 @@ abstract class ServiceHook {
                 val reply = it.args[2] as Parcel?
                 val cb = transactMapBefore.getOrDefault(code, null)
                 if (cb != null) {
-                    Log.ix("$name: Hook before $code")
                     data.enforceInterface(descriptor)
                     if (cb(code, data, reply)) {
                         it.result = true
+                    } else {
+                        data.setDataPosition(0)
+                        reply?.setDataPosition(0)
                     }
                 }
             }

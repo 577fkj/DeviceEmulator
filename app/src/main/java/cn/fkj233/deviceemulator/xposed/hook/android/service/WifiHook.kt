@@ -1,22 +1,19 @@
-package cn.fkj233.deviceemulator.xposed.hook.android
+package cn.fkj233.deviceemulator.xposed.hook.android.service
 
-import android.annotation.SuppressLint
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiInfoHidden
 import android.net.wifi.WifiSsid
 import android.os.IBinder
-import android.os.Parcel
 import android.os.Parcelable
 import cn.fkj233.deviceemulator.common.InetAddressHelper
+import cn.fkj233.deviceemulator.xposed.ServiceHelper
+import cn.fkj233.deviceemulator.xposed.hook.android.ServiceHook
 import com.github.kyuubiran.ezxhelper.utils.Log
-import com.github.kyuubiran.ezxhelper.utils.findMethod
 import com.github.kyuubiran.ezxhelper.utils.findMethodOrNull
-import com.github.kyuubiran.ezxhelper.utils.hookBefore
 import com.github.kyuubiran.ezxhelper.utils.invokeAs
 import com.github.kyuubiran.ezxhelper.utils.newInstanceAs
 import dev.rikka.tools.refine.Refine
-import java.net.InetAddress
 
 
 class WifiHook : ServiceHook() {
@@ -81,6 +78,9 @@ class WifiHook : ServiceHook() {
         Log.ix("WifiHook init")
         val wifi = getWifiInfo()
         addTransactHookBefore("getConnectionInfo") { code, data, reply ->
+            if (!ServiceHelper.isHook()) {
+                return@addTransactHookBefore false
+            }
             Log.ix("Hooked getConnectionInfo")
             val callingPackage = data.readString()
             Log.ix("CallPackageName: $callingPackage")
